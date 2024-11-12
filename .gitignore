@@ -1,3 +1,6 @@
+# Default output folder
+qonnx2mdc_outputs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
