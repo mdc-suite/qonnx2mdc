@@ -13,8 +13,6 @@ from qonnx_parser.libs.transformations.remove_identity import RemoveIdentityOper
 from qonnx_parser.libs.transformations.remove_flatten import RemoveFlatten
 from qonnx_parser.libs.transformations.set_nchw import SetNCHW_Shape
 
-
-
 class Converter_qonnx(Transformation):
     
     def __init__(

@@ -32,7 +32,7 @@ def backend(path_output = "None", model_qonnx = "None"):
     # I would allow to specify the output directory
 
         
-    output_path = '~/qoonnx2mdc' + outputs_folder
+    output_path = '~/qonnx2mdc' + outputs_folder
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -82,10 +82,15 @@ def backend(path_output = "None", model_qonnx = "None"):
         json_data = json.load(json_file)
 
 
-    write_cpp_equivalent(qonnx_model, init, json_data)
+    write_cpp_equivalent(qonnx_model, init, json_data, path_cal, path_cpp, output_path)
+
+    generate_SYNTH_files(path_hls)
+
+    #script_file =  path_cpp + "/TCL_file.tcl"
 
 
-def write_cpp_equivalent(onnx_model, init, json_file):
+
+def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output_path):
     # Load the ONNX model
     
     # ????
@@ -104,7 +109,7 @@ def write_cpp_equivalent(onnx_model, init, json_file):
     relu_check = False
     writer_list = []
 # Iterate through each node in the graph
-    for node in qonnx_model.graph.node:
+    for node in onnx_model.graph.node:
         node.domain= "qonnx.custom_op.general"
 
         # Check if the node represents a ReLU operation
@@ -194,7 +199,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
         # Iterate through the keys and values in the quantizer_config dictionary
         for node in model.graph.node:
             if node.op_type != "Quant" and node.op_type != "BipolarQuant":
-                predecessors = qonnx_model.find_direct_predecessors(node)
+                predecessors = onnx_model.find_direct_predecessors(node)
 
                 if not predecessors:
                     predecessor = init.net_input
@@ -202,7 +207,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 else:
                     predecessor = predecessors[0]
                     if predecessor.op_type == "Quant" or predecessor.op_type == "BipolarQuant":
-                        predecessor = qonnx_model.find_direct_predecessors(predecessor)[0]
+                        predecessor = onnx_model.find_direct_predecessors(predecessor)[0]
                     prev_layer_size = get_tensor_sizes(predecessor, output_info)
             else:
                 prev_layer_size = default_precision
@@ -227,7 +232,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 }
 
             elif node.op_type == "Gemm" or node.op_type == "Conv":
-                bit_width = qonnx_model.get_tensor_datatype(node.input[1])
+                bit_width = onnx_model.get_tensor_datatype(node.input[1])
                 bit_width = parse_value(bit_width)
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
@@ -244,7 +249,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "OUTPUT": prev_layer_size
                 }
             elif node.op_type == "Relu":
-                successors = qonnx_model.find_direct_successors(node)
+                successors = onnx_model.find_direct_successors(node)
                 successor = successors[0]
 
                 if successor.op_type == "Quant":
@@ -275,6 +280,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
 
     
+
 
 
 
@@ -444,11 +450,9 @@ endmodule
         new_file.write(content_file)
 
 
-generate_SYNTH_files(path_hls)
-
-import subprocess
-
 def run_vitis_hls(script_file):
+    import subprocess
+
     # Command to run Vitis HLS
     command = ['vitis_hls', '-f', script_file]
     
@@ -460,7 +464,6 @@ def run_vitis_hls(script_file):
         print("Error running Vitis HLS:", e)
 
 
-script_file =  path_cpp + "/TCL_file.tcl"
     
 # Run Vitis HLS
 #run_vitis_hls(script_file)
