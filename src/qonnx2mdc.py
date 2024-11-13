@@ -2,8 +2,8 @@
 # Licensed under BSD 3-Clause License (see LICENSE)
 # Authors: Francesco Ratto, Federico Manca (<name>.<surname>@unica.it)
 
-import frontend 
-import backend
+from frontend import frontend 
+from backend import backend
 
 
 def main():
