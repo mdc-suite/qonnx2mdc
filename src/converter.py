@@ -5,13 +5,15 @@
 
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.quant_constant_folding import FoldTransposeIntoQuantInit
-from qonnx_parser.libs.transformations.fold_quant_weights import FoldQuantWeights
-from qonnx_parser.libs.transformations.matmul_to_gemm import MatMul_to_Gemm
-from qonnx_parser.libs.transformations.remove_transpose import RemoveTranspose
-from qonnx_parser.libs.transformations.remove_reshape import RemoveReshape
-from qonnx_parser.libs.transformations.remove_identity import RemoveIdentityOperations
-from qonnx_parser.libs.transformations.remove_flatten import RemoveFlatten
-from qonnx_parser.libs.transformations.set_nchw import SetNCHW_Shape
+from transformations.fold_quant_weights import FoldQuantWeights
+from transformations.matmul_to_gemm import MatMul_to_Gemm
+from transformations.remove_transpose import RemoveTranspose
+from transformations.remove_reshape import RemoveReshape
+from transformations.remove_identity import RemoveIdentityOperations
+from transformations.remove_flatten import RemoveFlatten
+from transformations.set_nchw import SetNCHW_Shape
+
+
 
 class Converter_qonnx(Transformation):
     

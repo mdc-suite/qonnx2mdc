@@ -11,7 +11,7 @@ import os
 print("Json version:", json.__version__)
 
 from qonnx.core.modelwrapper import ModelWrapper as mw
-from qonnx_parser.libs.writers_cpp.Initializer import Initializer
+from writers.Initializer import Initializer
 from qonnx.custom_op.registry import getCustomOp
 
 
