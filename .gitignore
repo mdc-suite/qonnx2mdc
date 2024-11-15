@@ -167,3 +167,4 @@ cython_debug/
 #NN files
 *.h5
 *.onnx
+/Mnist_Training
