@@ -165,5 +165,5 @@ cython_debug/
 #.idea/
 
 #NN files
-.h5
-.onnx
+*.h5
+*.onnx
