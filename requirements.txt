@@ -238,3 +238,4 @@ widgetsnbextension==4.0.9
 wrapt==1.15.0
 zipp==3.17.0
 qkeras==0.9.0
+qonnx==0.3.0
