@@ -8,8 +8,8 @@ print("TensorFlow version:", tf.__version__) # add debug mode
 import json
 import onnx
 import os
-print("Json version:", json.__version__)
-
+import os
+from datetime import datetime
 from qonnx.core.modelwrapper import ModelWrapper as mw
 from writers.Initializer import Initializer
 from qonnx.custom_op.registry import getCustomOp
@@ -27,22 +27,30 @@ def backend(path_output = "None", model_qonnx = "None"):
 
     outputs_folder = '/qonnx2mdc_outputs/test0'
 
-    script_path = os.path.abspath(__file__)
 
     # I would allow to specify the output directory
 
         
-    output_path = '~/qonnx2mdc' + outputs_folder
+  
+    if path_output:
+        # Specify the output path
+        outputs_folder = "/example_output"
+        output_path = path_output + outputs_folder
+    else:
+        # Specify the output path
+        outputs_folder = "/example_output"
+        output_path = os.path.expanduser('~/qonnx2mdc_outputs') + outputs_folder
 
+    # Check if the folder exists
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-        print(f"Folder '{outputs_folder}' created successfully.")
+        print(f"Folder '{output_path}' created successfully.")
     else:
-        # It could be nice to create a folder with date and time
-        os.makedirs(output_path + '_new')
-        print(f"Folder '{outputs_folder}' created successfully.")
-
-
+        # Create a folder with the current date and time
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_output_path = output_path + f"_{timestamp}"
+        os.makedirs(new_output_path)
+        print(f"Folder '{new_output_path}' created successfully.")
     #--------------LOAD MODEL------------------#
     qonnx_model = model_qonnx
 
