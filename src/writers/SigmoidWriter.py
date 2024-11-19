@@ -222,7 +222,10 @@ end"""
     #generate X.ccp file
     def generate_sigmoid_ccp_HLS(self,path):
 
-        lut_or_discrete = True
+        #WE ARE STILL LOOKING FOR A WAY TO IMPLEMENT THE SIGMOID FUNCTION: FOR NOW, WE MAKE IT DO NOTHING
+
+        do_nothing = True
+        lut_or_discrete = False
 
         '''
         input.to_double(): This converts the fixed-point input value (ap_fixed<32,16>) to a double-precision floating-point value. This conversion is necessary because the original calculation involved floating-point values, and we want to maintain compatibility.
@@ -237,7 +240,33 @@ end"""
 
         '''
 
-        if lut_or_discrete:
+        if do_nothing:
+            content_file = \
+"""
+
+#include <hls_stream.h>
+#include "AAA_table.h"
+#include "ap_fixed.h"
+#include "hls_math.h"
+#include "my_types_AAA.h"
+#include "layer_sizes_AAA.h"
+#include "AAA.h"
+using namespace hls;
+
+void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
+#pragma HLS INTERFACE ap_ctrl_none port=return
+	ITER i;
+	ACT_BBB v;
+    ACT_CCC result;
+	for(i=0; i<in_s_CCC; i++){
+					input_0.read(v);
+					result = (ACT_s0)v;
+					output_0.write(result);
+			}
+}
+"""
+
+        elif lut_or_discrete:
 
             content_file = \
 """
