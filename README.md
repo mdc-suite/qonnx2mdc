@@ -13,7 +13,7 @@ It leverages the MDC tool and Vitis HLS.
     * miniconda 
 
 It is needed to create a virtual environment with the packates included in the requirements.txt file (see Step 3). 
-This tutorial has been tested with Python 3.8.18.
+This tutorial has been tested with Python 3.10.10.
 
 ## Step 1: Install Git
 Windows: 

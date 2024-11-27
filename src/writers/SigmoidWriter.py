@@ -191,7 +191,7 @@ end"""
     def generate_sigmoid_table_h(self,path):
         
         # Example usage
-        table_size = 320
+        table_size = 1024
         name_file = "AAA_table.h"
         name_file = name_file.replace("AAA", self.name)
         
@@ -206,7 +206,7 @@ end"""
             new_file.write("const ACT_s0 sigmoid_table[] = {")
             
             for i in range(table_size):
-                x_value = 16.0 * (i - table_size / 2.0) / table_size
+                x_value = 32.0 * (i - table_size / 2.0) / table_size
                 sigmoid_value = 1 / (1 + 2.71828 ** (-x_value))  # Sigmoid approximation using ap_fixed
                 new_file.write(f" ACT_s0({sigmoid_value:.6f})")
                 
@@ -224,7 +224,7 @@ end"""
 
         #WE ARE STILL LOOKING FOR A WAY TO IMPLEMENT THE SIGMOID FUNCTION: FOR NOW, WE MAKE IT DO NOTHING
 
-        do_nothing = True
+        do_nothing = False
         lut_or_discrete = False
 
         '''
@@ -323,7 +323,7 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
         ACT_CCC result;
 	for(i=0; i<in_s_CCC; i++){
 		input_0.read(v);
-                int index = (int)((v.to_double() + 8.0) * TABLE_SIZE / 16.0);
+                int index = (int)((v.to_double() + 32.0) * TABLE_SIZE / 64.0);
                 // Ensure the index is within bounds
                 if (index < 0) {
                     index = 0;
