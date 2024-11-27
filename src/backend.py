@@ -24,13 +24,6 @@ from writers.TCLWriter import TCLWriter
 
 
 def backend(path_output = "None", model_qonnx = "None"):
-
-    outputs_folder = '/qonnx2mdc_outputs/test0'
-
-
-    # I would allow to specify the output directory
-
-        
   
     if path_output:
         # Specify the output path
@@ -48,9 +41,9 @@ def backend(path_output = "None", model_qonnx = "None"):
     else:
         # Create a folder with the current date and time
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        new_output_path = output_path + f"_{timestamp}"
-        os.makedirs(new_output_path)
-        print(f"Folder '{new_output_path}' created successfully.")
+        output_path = output_path + f"_{timestamp}"
+        os.makedirs(output_path)
+        print(f"Folder '{output_path}' created successfully.")
     #--------------LOAD MODEL------------------#
     qonnx_model = model_qonnx
 
