@@ -87,3 +87,8 @@ vitis_hls -f TCL_file.tcl
 After the synthesis is done, go to Conv0_example/Conv_0/Conv_0/sultion1/sytnh/report and open pe_Conv_0_csytnh.rpt
 
 
+
+#######################
+----> remmeber that if I am using a conv1d model, the shape will be (3). The unsqueeze7squeeze layers are added when we use a conv2d (that expects a shae of 4) to act as a conv1d (that expects a shape of 3)
+Conv1D not supported by tf2onnx: squeeze/unsqueeze + Conv2d OR we implement a custom layer on onnx (prefered) ((UNIGE))
+Dense + BatchNorm not supported by tf2onnx: do we implement it on onnx (difficult) or do we create a new custom layer both on keras and onnx called QDenseBatchnorm (prefered)? (GENERAL)
