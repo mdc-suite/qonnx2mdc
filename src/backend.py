@@ -1,6 +1,6 @@
 # Copyright (C) 2024 Università degli Studi di Cagliari
 # Licensed under BSD 3-Clause License (see LICENSE)
-# Authors: Francesco Ratto, Federico Manca (<name>.<surname>@unica.it)
+# Authors: Francesco Ratto, Federico Manca (federico.manca@unica.it)
 
 import tensorflow as tf
 tf.keras.backend.clear_session()
@@ -15,9 +15,8 @@ from writers.Initializer import Initializer
 from qonnx.custom_op.registry import getCustomOp
 
 
-#check how to make this imports correctly
-#maybe a python package with a __init__.py file is required
-from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter # Import your layer writer functions
+# Import your layer writer functions
+from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter 
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
 
@@ -28,10 +27,6 @@ def backend(path_output = "None", model_qonnx = "None"):
     outputs_folder = '/qonnx2mdc_outputs/test0'
 
 
-    # I would allow to specify the output directory
-
-        
-  
     if path_output:
         # Specify the output path
         outputs_folder = "/example_output"
@@ -94,24 +89,20 @@ def backend(path_output = "None", model_qonnx = "None"):
 
     generate_SYNTH_files(path_hls)
 
-    #script_file =  path_cpp + "/TCL_file.tcl"
-
-
 
 def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output_path):
     # Load the ONNX model
     
-    # ????
     
     # Dictionary mapping ONNX operation types to layer writer functions
     layer_writers = {
-        "Conv": ConvWriter,  # Example: Change "Conv" to the actual ONNX operation type
-        "Gemm": GemmWriter,  # Example: Change "Dense" to the actual ONNX operation type
-        "Relu": ReluWriter,  # Example: Change "Relu" to the actual ONNX operation type
+        "Conv": ConvWriter,  
+        "Gemm": GemmWriter,  
+        "Relu": ReluWriter,  
         "BatchNormalization": BatchNormalizationWriter,
         "MaxPool": MaxPoolWriter,
         "Sigmoid": SigmoidWriter,
-        # Add more mappings for other layer types as needed
+       
     }
 
     relu_check = False
@@ -319,7 +310,7 @@ def generate_FIFO_file(path):
         `timescale 1ns / 1ps
 
 //-------------------------------------------------
-// NB: la fifo deve avere 2^n locazioni 
+// NB: fifio must have 2^n locations 
 //-------------------------------------------------
 
 module fifo_gen #(
@@ -349,8 +340,8 @@ assign empty_n = !empty;
 
 
 //--------------------------------------------------
-// i puntatori di lettura e scrittura sono sovradimensionati
-// di un bit rispetto al numero di indirizzi per generare full e empty
+// the write and read pointers over-dimensioned
+// by 1 bit with respect to the number of addresses tp generate full and empty
 // [Cummings SNUG 2002]
 //--------------------------------------------------
 
@@ -396,7 +387,7 @@ assign empty_n = !empty;
             end  
 
 //------------------------------------------
-// gestione dell indirizzo di lettura
+// reading address handling
 
 always@(posedge rd_clk)
         if (ap_rst)
@@ -405,7 +396,7 @@ always@(posedge rd_clk)
                 read_addr <= read_addr+1; 
 
 //---------------------------------------------                     
-// gestione indirizzo di scrittura
+// writing address handling
     always@(posedge wr_clk)
     if (ap_rst)
         write_addr <= 0;
@@ -413,13 +404,13 @@ always@(posedge rd_clk)
         write_addr = write_addr+1; 
 
 //---------------------------------------------
-// generazione empty
+// empty generation
 
 
 assign empty = (read_addr == write_addr) ? 1 : 0;
 
 //----------------------------------------------
-// generazione full
+// full generation
 
 
 assign full = ((read_addr[$clog2(depth)-1:0] == write_addr[$clog2(depth)-1:0])
