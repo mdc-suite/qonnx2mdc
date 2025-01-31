@@ -10,11 +10,7 @@ import os
 
 
 # METHODS FOR GENERATING TCL FILE
-#
-# ci serve un metodo (generate_TCL_file) per mettere
-# assieme Settings (get_TCL_settins) e fine file (get_TCL_ending).
-# Al contrario del file XDF, non c'è bisogno di
-# rappresentare le connessioni (get_XDF_connections).
+
 class TCLWriter():
 
     def __init__(self, writer_node_list, path):
