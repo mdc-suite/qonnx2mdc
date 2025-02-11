@@ -372,6 +372,7 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
             template = template.replace("CCC", "in")
         else:
             #match = re.match(r'([a-zA-Z])(\d+)', self.prev_layers[0].name)
+            print("In relu! What is self.prev_layers[0].name:",self.prev_layers[0].name)
             match = re.match(r'([a-zA-Z]+)_([0-9]+)', self.prev_layers[0].name)        
             first_letters, last_number = match.groups()
             template = template.replace("CCC", f"{first_letters[0].lower()}{last_number}")
