@@ -154,7 +154,7 @@ class XDFWriter():
                 id_buffer = "line_buffer_" + writer_node.name
                 id_buffer = id_buffer.replace("MaxPool", "mp")
                 instances += template.format(id_buffer, id_buffer)
-
+            
         # return instances
         return instances
 
@@ -261,7 +261,7 @@ class XDFWriter():
                     dst_port = "input_0"
 
                     connections += template.format(dst, dst_port, src, src_port)
-
+            # if the node is a MaxPool one, still use a specific procedure
                 # if not, still use a specific procedure
                 else:
 
@@ -401,7 +401,7 @@ class XDFWriter():
             # if the layer is Relu, MaxPool, Sigmoid, there is an input
             # and there are no parameters
             elif (writer_node.operation == "MaxPool"
-                or writer_node.operation == "Sigmoid"):
+                or writer_node.operation == "Sigmoid" or writer_node.operation == "GlobalAveragePool"):
 
                 # identify input
                 map_of_in_elements["input_0"] = writer_node.input_[0]
