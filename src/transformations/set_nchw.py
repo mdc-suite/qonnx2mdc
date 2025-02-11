@@ -21,9 +21,10 @@ class SetNCHW_Shape(Transformation):
 
 		#NHWC Format
 		input_shape = wrap.get_tensor_shape(net_input)
+		
+		if len(input_shape) == 3:
+			input_shape = np.insert(input_shape, 1, 1)
 
-
-		import numpy as np
 
 		input_shape = np.array(input_shape)
 

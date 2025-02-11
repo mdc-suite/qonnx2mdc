@@ -317,6 +317,7 @@ end"""
 
         
         in_d, in_h, in_w = self.isizes[1:]
+        print("self.osizes conv", self.osizes)
         out_d, out_h, out_w, = self.osizes[1:]
 
         # k is depth of the weights, d is channels of the weights

@@ -11,6 +11,7 @@ from .GemmWriter import GemmWriter
 from .BatchNormalizationWriter import BatchNormalizationWriter
 from .SigmoidWriter import SigmoidWriter
 from .ConcatWriter import ConcatWriter
+from .GlobalAveragePoolWriter import GlobalAveragePoolWriter
 
 
 mapping = {"Conv": ConvWriter,
@@ -19,7 +20,8 @@ mapping = {"Conv": ConvWriter,
            "Relu": ReluWriter,
            "BatchNormalization": BatchNormalizationWriter,
            "Sigmoid": SigmoidWriter,
-           "Concat": ConcatWriter
+           "Concat": ConcatWriter,
+           "GlobalAveragePool": GlobalAveragePoolWriter
            }
 
 skipped_operators = ["Input"]
