@@ -252,11 +252,8 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	ACT_CCC in_val;
 	ACT_BBB out_val;
 	
-	
-    for (pin = 0; pin < in_s_d_BBB; pin++) {
-	#pragma HLS PIPELINE rewind
-        sum[pin] = 0;
-						}
+	ACT_mac sum[out_s_d_gap0] = { 0 };  // Ensure initialization happens only once
+    
 
 	for(hout = 0; hout < out_s_h_BBB; hout++) {
 		for(wout = 0; wout < out_s_w_BBB; wout++) {
@@ -274,7 +271,7 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 		//Now it can write a submatrix
 Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
 
-						out_val = sum[pout]/out_s_d_BBB;
+						out_val = sum[pout]/(in_s_h_BBB * in_s_w_BBB));
 						count = count + 1;
 						output_0.write(out_val);
 					}
