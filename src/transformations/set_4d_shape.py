@@ -47,6 +47,42 @@ class Set4D(Transformation):
 
                 if len(output_shape) < 4:
                     wrap.set_tensor_shape(node.output[0], output_shape + [1])
+            
+            elif node.op_type == "MaxPool":
 
+                strides = None
+                kernel = None
+
+                # Extract strides and kernel size
+                for attr in node.attribute:
+                    if attr.name == "strides":
+                        strides = attr.ints
+                    elif attr.name == "kernel_shape":
+                        kernel = attr.ints
+
+                # Check if attributes exist
+                if strides is None or kernel is None:
+                    continue  # Skip if missing parameters
+
+                # Get input shape
+                input_shape = wrap.get_tensor_shape(node.input[0])
+                if input_shape is None or len(input_shape) < 4:
+                    continue  # Skip if shape is invalid
+
+                # Ensure it's a mutable list
+                new_shape = list(input_shape)
+
+                print("old shape:", new_shape)
+                print(kernel)
+                print(strides)
+
+                # Apply MaxPool output shape formula (with integer division)
+                new_shape[2] = (new_shape[2] - kernel[0]) // strides[0] + 1
+                new_shape[3] = (new_shape[3] - kernel[1]) // strides[1] + 1
+
+                print("new shape:", new_shape)
+                # Update the output shape
+                wrap.set_tensor_shape(node.output[0], new_shape)
+            
                 
         return model, False
