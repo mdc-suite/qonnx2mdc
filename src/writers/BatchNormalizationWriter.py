@@ -213,6 +213,14 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
     #generate parameters_X.h file
     def generate_parameters_h_HLS(self, path):
 
+
+        import numpy as np 
+
+        def float_to_fixed(value, total_bits=32, frac_bits=16):
+                    scale = 2 ** frac_bits
+                    fixed_value = np.round(value * scale).astype(np.int32)
+                    return fixed_value / scale
+
         content_file = \
 """
 #ifndef BATCH_AAA_PARAMS
@@ -225,9 +233,15 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 """
 
 
+        
+
         content_file = content_file.replace("AAA", self.name)
         enter_id = "_"+self.node.input[1]
-        weight_values = str(self.init.parameters_values[enter_id].tolist())
+        #weight_values = str(self.init.parameters_values[enter_id].tolist())
+
+        weight_values = np.array(self.init.parameters_values[enter_id].tolist())
+        weight_values = float_to_fixed(weight_values)
+        weight_values = str(weight_values.tolist())
 
         weight_values = weight_values.replace("[","{")
         weight_values = weight_values.replace("]", "}")
@@ -238,7 +252,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 
         weight = weight.replace("AAA", self.name)
         enter_id = "_"+self.node.input[2]
-        bias_values = str(self.init.parameters_values[enter_id].tolist())
+        bias_values = np.array(self.init.parameters_values[enter_id].tolist())
+        bias_values = float_to_fixed(bias_values)
+        bias_values = str(bias_values.tolist())
         bias_values = bias_values.replace("[","{")
         bias_values = bias_values.replace("]", "}")
 
@@ -248,7 +264,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 
         bias = bias.replace("AAA", self.name)
         enter_id = "_"+self.node.input[3]
-        runn_mean_values = str(self.init.parameters_values[enter_id].tolist())
+        runn_mean_values = np.array(self.init.parameters_values[enter_id].tolist())
+        runn_mean_values = float_to_fixed(runn_mean_values)
+        runn_mean_values = str(runn_mean_values.tolist())
         runn_mean_values = runn_mean_values.replace("[", "{")
         runn_mean_values = runn_mean_values.replace("]", "}")
 
@@ -260,7 +278,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
         runn_mean = runn_mean.replace("AAA", self.name)
         enter_id = "_"+self.node.input[4]
         self.init.parameters_values[enter_id] = self.init.parameters_values[enter_id] +  self.batch_eps + eps
-        runn_var_values = str(self.init.parameters_values[enter_id].tolist())
+        runn_var_values = np.array(self.init.parameters_values[enter_id].tolist())
+        runn_var_values = float_to_fixed(runn_var_values)
+        runn_var_values = str(runn_var_values.tolist())
         
         runn_var_values = runn_var_values.replace("[", "{")
         runn_var_values = runn_var_values.replace("]", "}")

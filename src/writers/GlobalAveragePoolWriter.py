@@ -233,7 +233,6 @@ end"""
 
 #include "layer_sizes_AAA.h"	
 #include "my_types_AAA.h"
-#include "line_buffer_AAA.h"
 using namespace hls;
 
 void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
@@ -241,6 +240,7 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	ITER pout;
 	ITER hout;
 	ITER wout;
+    ITER count;
 	
 	ITER pin;	
 	ITER hin;
@@ -252,11 +252,15 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	ACT_CCC in_val;
 	ACT_BBB out_val;
 	
-	ACT_mac sum[out_s_d_gap0] = { 0 };  // Ensure initialization happens only once
-    
+	ACT_mac sum[out_s_d_BBB];  // Ensure initialization happens only once
 
-	for(hout = 0; hout < out_s_h_BBB; hout++) {
-		for(wout = 0; wout < out_s_w_BBB; wout++) {
+    for(count = 0; count < out_s_d_BBB; count++){
+    #PRAGMA HLS UNROLL
+        sum[count] = 0;
+    }
+
+	for(hout = 0; hout < in_s_h_BBB; hout++) {
+		for(wout = 0; wout < in_s_w_BBB; wout++) {
 			for (pin = 0; pin < in_s_d_BBB; pin++) {
             #pragma HLS PIPELINE rewind
 					input_0.read(in_val);
@@ -271,8 +275,7 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 		//Now it can write a submatrix
 Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
 
-						out_val = sum[pout]/(in_s_h_BBB * in_s_w_BBB));
-						count = count + 1;
+						out_val = (ACT_BBB)(sum[pout]/(in_s_h_BBB * in_s_w_BBB));
 						output_0.write(out_val);
 					}
     }
