@@ -276,6 +276,7 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	ACT_mac sum[out_s_d_BBB];  // Ensure initialization happens only once
 
     for(count = 0; count < out_s_d_BBB; count++){
+    #PRAGMA HLS UNROLL
         sum[count] = 0;
     }
 
