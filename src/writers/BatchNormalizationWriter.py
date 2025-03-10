@@ -49,8 +49,9 @@ class BatchNormalizationWriter(HLSWriter):
             node_name = self.name
 
         
-            ap_fixed_INP_int , ap_fixed_INP_tot,ap_fixed_OUT_int , ap_fixed_OUT_tot, ap_fixed_COEFF_int , ap_fixed_COEFF_tot = self.get_my_size()
-
+            #ap_fixed_INP_int , ap_fixed_INP_tot,ap_fixed_OUT_int , ap_fixed_OUT_tot, ap_fixed_COEFF_int , ap_fixed_COEFF_tot = self.get_my_size()
+            ap_fixed_INP_tot, _ = self.get_MAC_size()
+            ap_fixed_OUT_tot, _ = self.get_MAC_size()
             # initializations of the variables that will contain
             # inputs and outputs templates of the layer
             inputs_actor = ""
