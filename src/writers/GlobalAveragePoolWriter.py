@@ -14,11 +14,12 @@ from .HLSWriter import  HLSWriter
 #buffers
 class GlobalAveragePoolWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
 
+        self.file = file
 
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES
@@ -255,7 +256,6 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	ACT_mac sum[out_s_d_BBB];  // Ensure initialization happens only once
 
     for(count = 0; count < out_s_d_BBB; count++){
-    #PRAGMA HLS UNROLL
         sum[count] = 0;
     }
 
@@ -530,6 +530,9 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
 
+        with open(os.path.join(path, self.file), "a") as new_file:
+            new_file.write(content_file)
+
     def generate_my_hls_video_h(self, path):
         content_file = \
 """
@@ -707,4 +710,7 @@ template<int ROWS, int COLS, typename T> T& LineBuffer<ROWS, COLS, T>::operator 
             with open(os.path.join(path, name_file), "w") as new_file:
                 new_file.write(template)
 
-    
+   
+
+
+   
