@@ -57,7 +57,7 @@ class TestBenchCppWriter():
             os.makedirs(path)
 
         # create XDF file
-        with open(os.path.join(path, "XDF_file.xdf"), "w") as the_XDF_file:
+        with open(os.path.join(path, "Testbench_vitis_hls.cpp"), "w") as the_XDF_file:
             the_XDF_file.write(XDF_file)
 
     # generate XDF prefix
