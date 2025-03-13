@@ -20,6 +20,7 @@ from qonnx.custom_op.registry import getCustomOp
 from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter, GlobalAveragePoolWriter # Import your layer writer functions
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
+from writers.TestBenchCppWriter import TestBenchCppWriter
 
 
 
@@ -128,11 +129,26 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
             if not os.path.exists(path_writers_cpp):
                 # Create the folder
                 os.makedirs(path_writers_cpp)
-            
-            
 
-            Writer = writer_function(node, onnx_model, init, json_file)  # Call the writer function with the node
-            Writer.write_CAL(path_cal)
+
+            if node.op_type == "GlobalAveragePool":
+                name_file = "/home/fede/my_types.h"
+                content_file = """
+#ifndef MY_TYPES_H
+#define MY_TYPES_H
+#include <ap_fixed.h>
+#include "layer_sizes.h" 
+                """
+                # file creation
+                with open(name_file, "w") as new_file:
+                    new_file.write(content_file)
+
+                Writer = writer_function(node, onnx_model, init, json_file, name_file) 
+
+            else:
+                Writer = writer_function(node, onnx_model, init, json_file)             
+                
+            Writer.write_CAL(path_cal)  
             Writer.write_HLS(path_writers_cpp)
             writer_list.append(Writer)
             
@@ -146,6 +162,7 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
 
     TCLWriter_ = TCLWriter(writer_list, output_path)
 
+    TestBenchCppWriter_ = TestBenchCppWriter(writer_list, path_cpp)
 
 def parse_value(value_str):
     import re
