@@ -21,6 +21,7 @@ from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
 from writers.TestBenchCppWriter import TestBenchCppWriter
+from writers.TestBenchCppWriter import TestBenchCppWriter
 
 
 
@@ -101,13 +102,9 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         "BatchNormalization": BatchNormalizationWriter,
         "MaxPool": MaxPoolWriter,
         "Sigmoid": SigmoidWriter,
-<<<<<<< HEAD
-       
-=======
         "GlobalAveragePool": GlobalAveragePoolWriter,
         "Concat": ConcatWriter
         # Add more mappings for other layer types as needed
->>>>>>> 5929702 (major changes for adapting 1d layers)
     }
 
     relu_check = False
