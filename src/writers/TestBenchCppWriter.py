@@ -148,7 +148,7 @@ class TestBenchCppWriter():
 
         template_in = """
         // Streams
-        ACT_{} in_stream ("in_stream");
+        stream<ACT_{}> in_stream ("in_stream");
 
         """
         template_in = template_in.format("in")
@@ -183,10 +183,10 @@ class TestBenchCppWriter():
                     
 
                 template_conv = """
-            KERN_ITEM_{} weight_{}_stream ("weight_{}_stream");
-            KERN_ITEM_{} bias_{}_stream ("bias_{}_stream");
-            ACT_{} line_buffer_{}_stream ("line_buffer_{}_stream");
-            ACT_mac pe_{}_stream ("pe_{}_stream");
+            stream<KERN_ITEM_{}> weight_{}_stream ("weight_{}_stream");
+            stream<KERN_ITEM_{}> bias_{}_stream ("bias_{}_stream");
+            stream<ACT_{}> line_buffer_{}_stream ("line_buffer_{}_stream");
+            stream<ACT_mac> pe_{}_stream ("pe_{}_stream");
 """
 
                 # input
@@ -217,7 +217,7 @@ class TestBenchCppWriter():
                 elif (writer_node.operation == "MaxPool"):
                     type_stream = "m" + number
                     template_buffer = """
-            ACT_{} line_buffer_{}_stream ("line_buffer_{}_stream");
+            stream<ACT_{}> line_buffer_{}_stream ("line_buffer_{}_stream");
                     """
                 elif (writer_node.operation == "GlobalAveragePool"):
                     type_stream = "gap" + number
@@ -229,7 +229,7 @@ class TestBenchCppWriter():
                     
 
                 template_param = """
-            ACT_{} {}_stream ("{}_stream");
+            stream<ACT_{}> {}_stream ("{}_stream");
       
         """
                 instances += template_param.format(type_stream, writer_node.name, writer_node.name)
