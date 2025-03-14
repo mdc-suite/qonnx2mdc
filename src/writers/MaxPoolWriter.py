@@ -14,7 +14,7 @@ from .HLSWriter import  HLSWriter
 #buffers
 class MaxPoolWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -42,6 +42,9 @@ class MaxPoolWriter(HLSWriter):
         self.stride = stride
         self.kernel = kernel_shape
         self.padding = pads
+
+        self.types_file = types_file
+        self.sizes_file = sizes_file
 
 
 # -----------------------------------------------------
@@ -471,6 +474,11 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
     # generate a "my tipes" file
     def generate_my_types_h(self,  path):
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+"""
 
         template = \
 """
@@ -500,11 +508,13 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
          
         # fill the template
         content_file = template.replace("AAA", self.name)
+        template_types = template_types.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         number = "m"+ number
 
         content_file = content_file.replace("BBB", number)
+        template_types = template_types.replace("BBB", number)
         #initialization
         ap_fixed_DATA_tot = ""
         ap_fixed_DATA_int = ""
@@ -533,6 +543,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot)).replace("CCC", str(ap_fixed_INP_int))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         mac_value_tot,mac_value_int = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
         content_file = content_file.replace("ZZZ",tmp)
@@ -580,6 +591,9 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
     def generate_my_hls_video_h(self, path):
         content_file = \

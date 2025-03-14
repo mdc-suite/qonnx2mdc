@@ -11,11 +11,13 @@ from .HLSWriter import  HLSWriter
 
 class SigmoidWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
 
+        self.types_file = types_file
+        self.sizes_file = sizes_file
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES
 
@@ -363,6 +365,12 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
     # generate a "my tipes" file
     def generate_my_types_h(self,path):
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_CCC;
+"""
+
         template = \
         """
 #ifndef MY_TYPES_AAA_S
@@ -381,6 +389,8 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
         number = ''.join(filter(str.isdigit, self.name))
         number = "s"+ number
         content_file = template.replace("CCC", number)
+        template_types = template_types.replace("AAA", self.name)
+        template_types = template_types.replace("CCC", number)
 
         if self.is_Input_prev():
             content_file = content_file.replace("BBB", "in")
@@ -418,11 +428,13 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
             mac_value_tot,mac_value_int = self.get_MAC_size()
             tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
             content_file = content_file.replace("WWW",tmp)
+            
         else:
             mac_value_tot,mac_value_int = self.get_MAC_size()
             tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
             content_file = content_file.replace("WWW",tmp)
 
+        template_types = template_types.replace("XXX",tmp)
 
         # name of the file
         name_file = "my_types_" + self.name + ".h"
@@ -430,3 +442,6 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)

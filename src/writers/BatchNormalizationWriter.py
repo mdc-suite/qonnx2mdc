@@ -12,7 +12,7 @@ from .HLSWriter import  HLSWriter
 
 class BatchNormalizationWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -23,6 +23,9 @@ class BatchNormalizationWriter(HLSWriter):
         self.batch_eps = self.Batchnormalization_params[0]
         self.batch_spatial = self.Batchnormalization_params[1]
         self.batch_momentum = self.Batchnormalization_params[2]
+
+        self.types_file = types_file
+        self.sizes_file = sizes_file
 
 
         
@@ -372,6 +375,13 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
 
         import re
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+    typedef YYY COEFF_BBB;
+"""
+
         template = \
 """
 #ifndef MY_TYPES_AAA_S
@@ -403,6 +413,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         ap_fixed_COEFF_int = ""
 
         # fill the template
+        template_types = template_types.replace("AAA", self.name)
         content_file = template.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
@@ -417,6 +428,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
             content_file = content_file.replace("CCC", f"{first_letters[0].lower()}{last_number}")
 
         content_file = content_file.replace("BBB", number)
+        template_types = template_types.replace("BBB", number)
 
         
 
@@ -445,9 +457,11 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         value1, value2 = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         
         tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("YYY", tmp)
+        template_types = template_types.replace("YYY", tmp)
 
         ##############--PREVIOUS LAYER--############################
 
@@ -487,6 +501,9 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
 # return hyperparameters: eps, spatial, momentum / of the BatchNormalization layer
 
