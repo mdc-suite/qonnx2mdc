@@ -12,7 +12,7 @@ from .HLSWriter import  HLSWriter
 #no buffers
 class GemmWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, size_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -21,6 +21,8 @@ class GemmWriter(HLSWriter):
         self.gemm_transA = self.gemm_transA()
         self.gemm_transB = self.gemm_transB()
         self.pool_mode = 0
+        self.types_file = types_file
+        self.size_file = size_file
 
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES

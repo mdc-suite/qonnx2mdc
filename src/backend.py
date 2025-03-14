@@ -111,6 +111,7 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
 
     relu_check = False
     writer_list = []
+    count = 0
 # Iterate through each node in the graph
     for node in onnx_model.graph.node:
         node.domain= "qonnx.custom_op.general"
@@ -131,22 +132,37 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
                 os.makedirs(path_writers_cpp)
 
 
-            if node.op_type == "GlobalAveragePool":
-                name_file = "/home/fede/my_types.h"
-                content_file = """
+            if count == 0:
+                count += 1
+                types_file = path_cpp + "/my_types.h"
+                size_file = path_cpp + "/my_sizes.h"
+                types_tmp = """
 #ifndef MY_TYPES_H
 #define MY_TYPES_H
 #include <ap_fixed.h>
-#include "layer_sizes.h" 
+#include "my_sizes.h" 
+
+    typedef ap_fixed< 32, 16, AP_RND, AP_SAT>  ACT_mac;
+    typedef ap_fixed< 32, 16, AP_RND, AP_SAT>  ACT_in;
+
+                """
+                size_tmp = """
+#ifndef MY_SIZES_H
+#define MY_SIZES_H
+#include <ap_fixed.h>
                 """
                 # file creation
-                with open(name_file, "w") as new_file:
-                    new_file.write(content_file)
+                with open(types_file, "w") as new_file:
+                    new_file.write(types_tmp)
+                
+                # file creation
+                with open(size_file, "w") as new_file:
+                    new_file.write(size_tmp)
 
-                Writer = writer_function(node, onnx_model, init, json_file, name_file) 
+                Writer = writer_function(node, onnx_model, init, json_file, types_file, size_file) 
 
             else:
-                Writer = writer_function(node, onnx_model, init, json_file)             
+                Writer = writer_function(node, onnx_model, init, json_file, types_file, size_file)            
                 
             Writer.write_CAL(path_cal)  
             Writer.write_HLS(path_writers_cpp)

@@ -14,12 +14,13 @@ from .HLSWriter import  HLSWriter
 #buffers
 class GlobalAveragePoolWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file, file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
 
-        self.file = file
+        self.types_file = types_file
+        self.sizes_file = sizes_file
 
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES
@@ -420,6 +421,12 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
     # generate a "my tipes" file
     def generate_my_types_h(self,  path):
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+"""
+
 
         template = \
 """
@@ -449,11 +456,13 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
          
         # fill the template
         content_file = template.replace("AAA", self.name)
+        template_types = template_types.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         number = "gap"+ number
 
         content_file = content_file.replace("BBB", number)
+        template_types = template_types.replace("BBB", number)
         #initialization
         ap_fixed_DATA_tot = ""
         ap_fixed_DATA_int = ""
@@ -482,6 +491,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot)).replace("CCC", str(ap_fixed_INP_int))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         mac_value_tot,mac_value_int = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
         content_file = content_file.replace("ZZZ",tmp)
@@ -530,8 +540,8 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
 
-        with open(os.path.join(path, self.file), "a") as new_file:
-            new_file.write(content_file)
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
     def generate_my_hls_video_h(self, path):
         content_file = \
@@ -689,27 +699,7 @@ template<int ROWS, int COLS, typename T> T& LineBuffer<ROWS, COLS, T>::operator 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
 
-    def generate_my_Input_types_h(self,path):
-
-
-            template = \
-    """
-    #ifndef MY_TYPES_Input0
-    #define MY_TYPES_Input0
-        #include <ap_fixed.h>
-        
-        typedef ap_fixed< 16, 6, AP_RND, AP_SAT>  ACT_in;
-        typedef short ITER;
-    #endif
-    """
-            
-            # name of the file
-            name_file = "my_types_Input0.h"
-
-            # file creation
-            with open(os.path.join(path, name_file), "w") as new_file:
-                new_file.write(template)
-
+   
    
 
 
