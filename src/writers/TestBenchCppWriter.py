@@ -91,9 +91,9 @@ class TestBenchCppWriter():
 
                 template_conv = """
         #include "weight_{}.h"
-        #include "parameters_{}.h
+        #include "parameters_{}.h"
         #include "pe_{}.h"
-        #include "bias_{}.h
+        #include "bias_{}.h"
         #include "line_buffer_{}.h"
                 """
 
@@ -125,7 +125,7 @@ class TestBenchCppWriter():
             else:
 
                 template = """
-        #include {}.h
+        #include "{}.h"
                 """
 
                 # input
