@@ -407,6 +407,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
 
 #Extract Previous Layer's Types.
         #ap_fixed_DATA_int, ap_fixed_DATA_tot, selector_DATA, ap_fixed_COEFF_int, ap_fixed_COEFF_tot, selector_COEFF = self.get_my_size(bit_size_directives)
+        
         if self.is_Input_prev():
             ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
         else:
@@ -420,10 +421,12 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         content_file = content_file.replace("AAA", self.name)
 
         #output
-        tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_int_P))
+        #tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_int_P))
+        value1, value2 = self.get_MAC_size()
+        tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("XXX",tmp)
         
-        tmp = template_ap_fixed.replace("BBB", str(ap_fixed_COEFF_tot)).replace("CCC", str(ap_fixed_COEFF_int))
+        tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("YYY", tmp)
 
         ##############--PREVIOUS LAYER--############################
