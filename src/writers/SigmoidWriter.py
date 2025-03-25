@@ -191,7 +191,7 @@ end"""
     def generate_sigmoid_table_h(self,path):
         
         # Example usage
-        table_size = 320
+        table_size = 1024
         name_file = "AAA_table.h"
         name_file = name_file.replace("AAA", self.name)
         
@@ -206,7 +206,7 @@ end"""
             new_file.write("const ACT_s0 sigmoid_table[] = {")
             
             for i in range(table_size):
-                x_value = 16.0 * (i - table_size / 2.0) / table_size
+                x_value = 32.0 * (i - table_size / 2.0) / table_size
                 sigmoid_value = 1 / (1 + 2.71828 ** (-x_value))  # Sigmoid approximation using ap_fixed
                 new_file.write(f" ACT_s0({sigmoid_value:.6f})")
                 
@@ -222,7 +222,10 @@ end"""
     #generate X.ccp file
     def generate_sigmoid_ccp_HLS(self,path):
 
-        lut_or_discrete = True
+        #WE ARE STILL LOOKING FOR A WAY TO IMPLEMENT THE SIGMOID FUNCTION: FOR NOW, WE MAKE IT DO NOTHING
+
+        do_nothing = False
+        lut_or_discrete = False
 
         '''
         input.to_double(): This converts the fixed-point input value (ap_fixed<32,16>) to a double-precision floating-point value. This conversion is necessary because the original calculation involved floating-point values, and we want to maintain compatibility.
@@ -237,7 +240,33 @@ end"""
 
         '''
 
-        if lut_or_discrete:
+        if do_nothing:
+            content_file = \
+"""
+
+#include <hls_stream.h>
+#include "AAA_table.h"
+#include "ap_fixed.h"
+#include "hls_math.h"
+#include "my_types_AAA.h"
+#include "layer_sizes_AAA.h"
+#include "AAA.h"
+using namespace hls;
+
+void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
+#pragma HLS INTERFACE ap_ctrl_none port=return
+	ITER i;
+	ACT_BBB v;
+    ACT_CCC result;
+	for(i=0; i<in_s_CCC; i++){
+					input_0.read(v);
+					result = (ACT_s0)v;
+					output_0.write(result);
+			}
+}
+"""
+
+        elif lut_or_discrete:
 
             content_file = \
 """
@@ -294,7 +323,7 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
         ACT_CCC result;
 	for(i=0; i<in_s_CCC; i++){
 		input_0.read(v);
-                int index = (int)((v.to_double() + 8.0) * TABLE_SIZE / 16.0);
+                int index = (int)((v.to_double() + 32.0) * TABLE_SIZE / 64.0);
                 // Ensure the index is within bounds
                 if (index < 0) {
                     index = 0;

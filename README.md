@@ -12,6 +12,7 @@ It leverages the MDC tool and Vitis HLS as backends for generating the accelerat
     * git
     * miniconda 
 
+
 You need to create a virtual environment with the packets included in the requirements.txt file (see Step 3). 
 This tutorial has been tested with Python 3.10.10.
 
@@ -119,3 +120,8 @@ _________________________________________________________________
 Funded by the European Union, by grant No. 101135183. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union. Neither the European Union nor the granting authority can be held responsible for them.
 
 
+
+#######################
+----> remmeber that if I am using a conv1d model, the shape will be (3). The unsqueeze7squeeze layers are added when we use a conv2d (that expects a shae of 4) to act as a conv1d (that expects a shape of 3)
+Conv1D not supported by tf2onnx: squeeze/unsqueeze + Conv2d OR we implement a custom layer on onnx (prefered) ((UNIGE))
+Dense + BatchNorm not supported by tf2onnx: do we implement it on onnx (difficult) or do we create a new custom layer both on keras and onnx called QDenseBatchnorm (prefered)? (GENERAL)
