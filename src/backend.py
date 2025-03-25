@@ -149,7 +149,6 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
                 size_tmp = """
 #ifndef MY_SIZES_H
 #define MY_SIZES_H
-#include <ap_fixed.h>
                 """
                 # file creation
                 with open(types_file, "w") as new_file:
@@ -164,15 +163,24 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
             else:
                 Writer = writer_function(node, onnx_model, init, json_file, types_file, size_file)            
                 
+            tmp_end = """
+#endif
+                """
+            
             Writer.write_CAL(path_cal)  
             Writer.write_HLS(path_writers_cpp)
             writer_list.append(Writer)
+            
+
+            
             
             
         elif node.op_type == "Quant" and relu_check:
             relu_check = False
         else:
             print(f"Unsupported layer type: {node.op_type}")
+        
+         
 
     XDFWriter_ = XDFWriter(writer_list, path_cal)
 
@@ -180,6 +188,14 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
 
     TestBenchCppWriter_ = TestBenchCppWriter(writer_list, path_cpp)
 
+    with open(types_file, "a") as new_file:
+                new_file.write(tmp_end)
+        
+    # file creation
+    with open(size_file, "a") as new_file:
+        new_file.write(tmp_end)   
+
+        
 def parse_value(value_str):
     import re
     if value_str == "BINARY":

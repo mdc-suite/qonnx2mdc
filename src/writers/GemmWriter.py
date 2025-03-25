@@ -121,6 +121,15 @@ end"""
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
 
+        template = \
+"""
+    #define in_s_d_BBB {}
+    #define in_s_h_BBB {}
+    #define in_s_w_BBB {}
+    #define in_s_BBB {}
+    #define out_s_BBB {}    
+"""
+
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -138,6 +147,7 @@ end"""
         number = ''.join(filter(str.isdigit, self.name))
         number = "g"+ number
         content_file = content_file.replace("BBB", number)
+        template = template.replace("BBB", number)
 
         
         in_d,in_h,in_w = self.isizes[1:]
@@ -151,7 +161,11 @@ end"""
                                   "in_s_d_BBB*in_s_h_BBB*in_s_w_BBB",
                                   out_s
                                   )
-        
+        template = template.format(
+                                  in_d,in_h,in_w,
+                                  "in_s_d_BBB*in_s_h_BBB*in_s_w_BBB",
+                                  out_s
+                                  )   
         content_file = content_file.replace("BBB", number)
 
         name_file = "layer_sizes_{}.h".format(self.name)
@@ -159,6 +173,10 @@ end"""
         with open(os.path.join(path, name_file), "w") as new_file:
 
             new_file.write(content_file)
+
+        with open(os.path.join(path, self.size_file), "a") as new_file:
+
+            new_file.write(template)
 
     # generate X.h file
     def generate_gemm_h_HLS(self, path):

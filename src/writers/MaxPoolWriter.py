@@ -184,6 +184,27 @@ end"""
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
 
+        template = \
+"""
+    #define in_s_d_BBB {}
+	#define in_s_h_BBB {}
+	#define in_s_w_BBB {}
+	#define out_s_d_BBB {}
+	#define out_s_h_BBB {}
+	#define out_s_w_BBB {}
+	
+	#define kern_s_k_BBB {}
+	#define kern_s_d_BBB {}
+	#define kern_s_h_BBB {}
+	#define kern_s_w_BBB {}
+	
+	#define stride_h_BBB {}
+	#define stride_w_BBB {}
+	
+	#define pad_h_BBB {}
+	#define pad_w_BBB {}  
+"""
+
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -210,6 +231,7 @@ end"""
 """
         number = ''.join(filter(str.isdigit, self.name))
         content_file = content_file.replace("BBB", "m"+number)
+        template = template.replace("BBB", "m"+number)
         in_d, in_h, in_w = self.isizes[1:]
         out_d, out_h, out_w, = self.osizes[1:]
         kern_k, kern_d= out_d, in_d
@@ -224,6 +246,13 @@ end"""
                                   stride_h, stride_w, 
                                   pad_h, pad_w
                                   )
+        template = template.format(
+                                  in_d,in_h,in_w,
+                                  out_d, out_h, out_w,
+                                  kern_k, kern_d, kern_h, kern_w,
+                                  stride_h, stride_w, 
+                                  pad_h, pad_w  
+                                    )
         content_file = content_file.replace("AAA", self.name)
         name_file = "layer_sizes_{}.h".format(self.name)
 
@@ -231,6 +260,10 @@ end"""
 
             new_file.write(content_file)
 
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+
+            new_file.write(template)
+            
     #generate X.h file
     def generate_maxpool_h_HLS(self,path):
 

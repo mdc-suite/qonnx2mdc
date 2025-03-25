@@ -112,6 +112,14 @@ end"""
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
 
+        template = \
+"""
+    #define in_s_d_AAA {}
+    #define in_s_h_AAA {}
+    #define in_s_w_AAA {}
+    #define in_s_AAA in_s_d_AAA*in_s_h_AAA*in_s_w_AAA  
+"""
+
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -128,6 +136,7 @@ end"""
         number = "s"+ number
 
         content_file = content_file.replace("AAA", number)
+        template = template.replace("AAA", number)
         #CHW
         if(len(self.isizes) == 4):
             in_d,in_h,in_w = self.isizes[1:]
@@ -146,12 +155,17 @@ end"""
         content_file = content_file.format(
                                   in_d,in_h,in_w
                                   )
-
+        template = template.format(
+                                  in_d,in_h,in_w
+                                  ) 
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
 
             new_file.write(content_file)
+
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+            new_file.write(template)
 
     #generate X.h file
     def generate_sigmoid_h_HLS(self,path):
