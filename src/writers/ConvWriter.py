@@ -288,7 +288,27 @@ end"""
         
     # generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self, path):
+        
+        template = \
+"""
+    #define in_s_d_AAA {}
+    #define in_s_h_AAA {}
+    #define in_s_w_AAA {}
+    #define out_s_d_AAA {}
+    #define out_s_h_AAA {}
+    #define out_s_w_AAA {}
 
+    #define kern_s_k_AAA {}
+    #define kern_s_d_AAA {}
+    #define kern_s_h_AAA {}
+    #define kern_s_w_AAA {}
+
+    #define stride_h_AAA {}
+    #define stride_w_AAA {}
+
+    #define pad_h_AAA {}
+    #define pad_w_AAA {}  
+"""
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -316,10 +336,10 @@ end"""
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         content_file = content_file.replace("AAA", "c"+number)
+        template = template.replace("AAA", "c"+number)
 
         
         in_d, in_h, in_w = self.isizes[1:]
-        print("self.osizes conv", self.osizes)
         out_d, out_h, out_w, = self.osizes[1:]
 
         # k is depth of the weights, d is channels of the weights
@@ -337,10 +357,21 @@ end"""
             pad_h, pad_w
         )
 
+        template = template.format(
+            in_d, in_h, in_w,
+            out_d, out_h, out_w,
+            kern_k, kern_d, kern_h, kern_w,
+            stride_h, stride_w,
+            pad_h, pad_w
+        )
+
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+            new_file.write(template)
 
     # generate X.h file
     def generate_conv_h_HLS(self, path):
