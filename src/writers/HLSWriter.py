@@ -134,6 +134,7 @@ class HLSWriter():
         self.isizes = self.node_isizes()
         self.osizes = self.node_osizes()
         
+        
         # dict that map inputs and parameters of a node
         # to a certain role
         self.map_of_in_elements = {}

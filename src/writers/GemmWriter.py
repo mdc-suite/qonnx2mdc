@@ -150,7 +150,19 @@ end"""
         template = template.replace("BBB", number)
 
         
-        in_d,in_h,in_w = self.isizes[1:]
+        if (len(self.isizes)) == 2 :
+            if self.isizes[1] == 1 or self.isizes[1] == -1:
+                in_d = 1
+                in_w = self.isizes[2]
+                in_h = 1
+            elif self.isizes[0] == 1 or self.isizes[0] == -1:
+                in_d = 1
+                in_w = self.isizes[1]
+                in_h = 1
+            else:
+                in_d,in_h,in_w = self.isizes[1:]
+        else:
+            in_d,in_h,in_w = self.isizes[1:]
 
 
         # recover number_of_classes

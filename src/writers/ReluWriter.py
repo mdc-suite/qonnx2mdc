@@ -201,10 +201,15 @@ end"""
 #endif     
 """
         #CHW
+        
         if (len(self.isizes)) == 2 :
             if self.isizes[1] == 1 or self.isizes[1] == -1:
                 in_d = 1
                 in_w = self.isizes[2]
+                in_h = 1
+            elif self.isizes[0] == 1 or self.isizes[0] == -1:
+                in_d = 1
+                in_w = self.isizes[1]
                 in_h = 1
             else:
                 in_d,in_h,in_w = self.isizes[1:]
@@ -215,6 +220,10 @@ end"""
             if self.osizes[1] == 1 or self.osizes[1] == -1:
                 out_d = 1
                 out_w = self.osizes[2]
+                out_h = 1
+            elif self.osizes[0] == 1 or self.osizes[0] == -1:
+                out_d = 1
+                out_w = self.osizes[1]
                 out_h = 1
             else:
                 out_d, out_h, out_w, = self.osizes[1:]
@@ -363,7 +372,6 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
             template = template.replace("CCC", "in")
         else:
             #match = re.match(r'([a-zA-Z])(\d+)', self.prev_layers[0].name)
-            print("In relu! What is self.prev_layers[0].name:",self.prev_layers[0].name)
             match = re.match(r'([a-zA-Z]+)_([0-9]+)', self.prev_layers[0].name)        
             first_letters, last_number = match.groups()
             template = template.replace("CCC", f"{first_letters[0].lower()}{last_number}")

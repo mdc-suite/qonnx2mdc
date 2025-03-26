@@ -702,6 +702,7 @@ Loop_scrittura:for(hkern=0; hkern < kern_s_h_BBB ; hkern++){
         weight = weight.replace("AAA", self.name)
 
         #enter_id = self.map_of_in_elements["bias"]
+        print(self.node.input)
         enter_id = "_"+self.node.input[2]
 
         bias_values = str(self.init.parameters_values[enter_id].tolist())
