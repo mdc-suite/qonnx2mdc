@@ -17,7 +17,7 @@ from qonnx.custom_op.registry import getCustomOp
 
 #check how to make this imports correctly
 #maybe a python package with a __init__.py file is required
-from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter, GlobalAveragePoolWriter # Import your layer writer functions
+from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter, GlobalAveragePoolWriter , ConcatWriter# Import your layer writer functions
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
 from writers.TestBenchCppWriter import TestBenchCppWriter
@@ -105,6 +105,7 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         "MaxPool": MaxPoolWriter,
         "Sigmoid": SigmoidWriter,
         "GlobalAveragePool": GlobalAveragePoolWriter,
+        "Concat": ConcatWriter
         # Add more mappings for other layer types as needed
     }
 
@@ -298,6 +299,14 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "INPUT": prev_layer_size,
                 "OUTPUT": prev_layer_size
                 }
+
+            elif node.op_type == "Concat":
+                output_info[node.name]={
+                "OP_TYPE": node.op_type,
+                "DATATYPE": "ap_fixed",
+                "INPUT": prev_layer_size,
+                "OUTPUT": prev_layer_size
+                }
             elif node.op_type == "Relu":
                 successors = onnx_model.find_direct_successors(node)
                 successor = successors[0]
@@ -312,7 +321,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
                     
                 else:
-                    bit_width = default_precision
+                    bit_width = default_precision[0]
 
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
