@@ -119,9 +119,20 @@ _________________________________________________________________
 
 Funded by the European Union, by grant No. 101135183. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union. Neither the European Union nor the granting authority can be held responsible for them.
 
+# Citations
+If you use this work in your research, please consider citing the following paper: 
 
+@inproceedings{manca2025onnx,
+  author    = {Federico Manca and Francesco Ratto and Francesca Palumbo},
+  title     = {ONNX-to-Hardware Design Flow for Adaptive Neural-Network Inference on FPGAs},
+  booktitle = {Embedded Computer Systems: Architectures, Modeling, and Simulation -- Proceedings of the 24th International Conference, SAMOS 2024, Part II},
+  pages     = {85--96},
+  year      = {2025},
+  publisher = {Springer},
+  address   = {Berlin, Heidelberg},
+  doi       = {10.1007/978-3-031-78380-7_7},
+  url       = {https://doi.org/10.1007/978-3-031-78380-7_7},
+  keywords  = {Convolutional Neural Networks, Approximate Computing, FPGAs, Cyber-Physical Systems},
+  location  = {Samos, Greece}
+}
 
-#######################
-----> remmeber that if I am using a conv1d model, the shape will be (3). The unsqueeze7squeeze layers are added when we use a conv2d (that expects a shae of 4) to act as a conv1d (that expects a shape of 3)
-Conv1D not supported by tf2onnx: squeeze/unsqueeze + Conv2d OR we implement a custom layer on onnx (prefered) ((UNIGE))
-Dense + BatchNorm not supported by tf2onnx: do we implement it on onnx (difficult) or do we create a new custom layer both on keras and onnx called QDenseBatchnorm (prefered)? (GENERAL)
