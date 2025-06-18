@@ -122,6 +122,7 @@ Funded by the European Union, by grant No. 101135183. Views and opinions express
 # Citations
 If you use this work in your research, please consider citing the following paper: 
 
+```bibtex
 @inproceedings{manca2025onnx,
   author    = {Federico Manca and Francesco Ratto and Francesca Palumbo},
   title     = {ONNX-to-Hardware Design Flow for Adaptive Neural-Network Inference on FPGAs},
@@ -135,4 +136,4 @@ If you use this work in your research, please consider citing the following pape
   keywords  = {Convolutional Neural Networks, Approximate Computing, FPGAs, Cyber-Physical Systems},
   location  = {Samos, Greece}
 }
-
+```
