@@ -11,7 +11,7 @@ from qonnx.transformation.base import Transformation
 
 
 
-class SetNCHW_Shape(Transformation):
+class NCL_to_4d(Transformation):
         
 	def apply(self, model):
 
@@ -19,7 +19,7 @@ class SetNCHW_Shape(Transformation):
 
 		net_input = wrap.graph.input[0].name
 
-		#NHWC Format
+		#NCL Format
 		input_shape = wrap.get_tensor_shape(net_input)
 		
 		if len(input_shape) == 3:
@@ -28,12 +28,12 @@ class SetNCHW_Shape(Transformation):
 
 		input_shape = np.array(input_shape)
 
-		# Transpose to NCHW format
-		order = [0,3,1,2]
+		# Transpose from NCL to 1NCL = NCHW format
+		order = [0,1,2,3]
 
 		new_shape = input_shape[order]
 
-		print("Input shape (NCHW):", new_shape.tolist())
+		print("Input shape (1NCL):", new_shape.tolist())
 
 		wrap.set_tensor_shape(net_input,new_shape.tolist())
 

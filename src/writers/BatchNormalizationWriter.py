@@ -12,7 +12,7 @@ from .HLSWriter import  HLSWriter
 
 class BatchNormalizationWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -23,6 +23,9 @@ class BatchNormalizationWriter(HLSWriter):
         self.batch_eps = self.Batchnormalization_params[0]
         self.batch_spatial = self.Batchnormalization_params[1]
         self.batch_momentum = self.Batchnormalization_params[2]
+
+        self.types_file = types_file
+        self.sizes_file = sizes_file
 
 
         
@@ -120,17 +123,28 @@ end"""
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
 
+        template = \
+"""
+    #define in_s_d_BBB {}
+    #define in_s_h_BBB {}
+    #define in_s_w_BBB {}
+    #define out_s_d_BBB {}
+    #define out_s_h_BBB {}
+    #define out_s_w_BBB {}   
+
+"""
+
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
 #define LAYER_SIZES_AAA_H
 
-        #define in_s_d_BBB {}
-        #define in_s_h_BBB {}
-        #define in_s_w_BBB {}
-        #define out_s_d_BBB {}
-        #define out_s_h_BBB {}
-        #define out_s_w_BBB {}        
+    #define in_s_d_BBB {}
+    #define in_s_h_BBB {}
+    #define in_s_w_BBB {}
+    #define out_s_d_BBB {}
+    #define out_s_h_BBB {}
+    #define out_s_w_BBB {}        
 #endif     
 """
         #CHW
@@ -159,6 +173,10 @@ end"""
                                   in_d,in_h,in_w,
                                   out_d, out_h, out_w,
                                   )
+        template = template.format(
+                                  in_d,in_h,in_w,
+                                  out_d, out_h, out_w,
+                                  )
         content_file = content_file.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
@@ -167,11 +185,17 @@ end"""
 
 
         content_file = content_file.replace("BBB", number)
+        template = template.replace("BBB", number)
+
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
 
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+            new_file.write(template)
+
     #generate X.h file
     def generate_batch_h_HLS(self,path):
 
@@ -213,6 +237,14 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
     #generate parameters_X.h file
     def generate_parameters_h_HLS(self, path):
 
+
+        import numpy as np 
+
+        def float_to_fixed(value, total_bits=32, frac_bits=16):
+                    scale = 2 ** frac_bits
+                    fixed_value = np.round(value * scale).astype(np.int32)
+                    return fixed_value / scale
+
         content_file = \
 """
 #ifndef BATCH_AAA_PARAMS
@@ -225,9 +257,15 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 """
 
 
+        
+
         content_file = content_file.replace("AAA", self.name)
         enter_id = "_"+self.node.input[1]
-        weight_values = str(self.init.parameters_values[enter_id].tolist())
+        #weight_values = str(self.init.parameters_values[enter_id].tolist())
+
+        weight_values = np.array(self.init.parameters_values[enter_id].tolist())
+        weight_values = float_to_fixed(weight_values)
+        weight_values = str(weight_values.tolist())
 
         weight_values = weight_values.replace("[","{")
         weight_values = weight_values.replace("]", "}")
@@ -238,7 +276,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 
         weight = weight.replace("AAA", self.name)
         enter_id = "_"+self.node.input[2]
-        bias_values = str(self.init.parameters_values[enter_id].tolist())
+        bias_values = np.array(self.init.parameters_values[enter_id].tolist())
+        bias_values = float_to_fixed(bias_values)
+        bias_values = str(bias_values.tolist())
         bias_values = bias_values.replace("[","{")
         bias_values = bias_values.replace("]", "}")
 
@@ -248,7 +288,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 
         bias = bias.replace("AAA", self.name)
         enter_id = "_"+self.node.input[3]
-        runn_mean_values = str(self.init.parameters_values[enter_id].tolist())
+        runn_mean_values = np.array(self.init.parameters_values[enter_id].tolist())
+        runn_mean_values = float_to_fixed(runn_mean_values)
+        runn_mean_values = str(runn_mean_values.tolist())
         runn_mean_values = runn_mean_values.replace("[", "{")
         runn_mean_values = runn_mean_values.replace("]", "}")
 
@@ -260,7 +302,9 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
         runn_mean = runn_mean.replace("AAA", self.name)
         enter_id = "_"+self.node.input[4]
         self.init.parameters_values[enter_id] = self.init.parameters_values[enter_id] +  self.batch_eps + eps
-        runn_var_values = str(self.init.parameters_values[enter_id].tolist())
+        runn_var_values = np.array(self.init.parameters_values[enter_id].tolist())
+        runn_var_values = float_to_fixed(runn_var_values)
+        runn_var_values = str(runn_var_values.tolist())
         
         runn_var_values = runn_var_values.replace("[", "{")
         runn_var_values = runn_var_values.replace("]", "}")
@@ -352,6 +396,13 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
 
         import re
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+    typedef YYY COEFF_BBB;
+"""
+
         template = \
 """
 #ifndef MY_TYPES_AAA_S
@@ -383,6 +434,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         ap_fixed_COEFF_int = ""
 
         # fill the template
+        template_types = template_types.replace("AAA", self.name)
         content_file = template.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
@@ -397,6 +449,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
             content_file = content_file.replace("CCC", f"{first_letters[0].lower()}{last_number}")
 
         content_file = content_file.replace("BBB", number)
+        template_types = template_types.replace("BBB", number)
 
         
 
@@ -425,9 +478,11 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         value1, value2 = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         
         tmp = template_ap_fixed.replace("BBB", str(value1)).replace("CCC", str(value2))
         content_file = content_file.replace("YYY", tmp)
+        template_types = template_types.replace("YYY", tmp)
 
         ##############--PREVIOUS LAYER--############################
 
@@ -467,6 +522,9 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
 # return hyperparameters: eps, spatial, momentum / of the BatchNormalization layer
 

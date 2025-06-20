@@ -11,40 +11,45 @@ from .HLSWriter import  HLSWriter
 # no buffers
 class ConcatWriter(HLSWriter):
 
-    def __init__(self, reader):
+    def __init__(self, node, model, init, json_file, types_file, size_file):
 
         # recover data from reader node
-        self.recover_data_from_reader(reader)
+        self.recover_data_from_reader(node, model, init, json_file)
 
-        # recover hyperparameters
-        self.axis = self.reader.axis
+        print("ConcatWriter")
+        print("self.node",self.node)
+        print(self.prev_layers)
 
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES
 
     # write CAL files for the actual lauer
-    def write_CAL(self, bit_size_directives, path):
+    def write_CAL(self, path):
 
         # list that will contains inputs and output of the layer
         input_list = []
         output_list = []
 
+        input_tmp = "input_{}"
 
-        for input_name in self.map_of_in_elements.keys():
-            input_list.append(input_name)
+
+        for i in range(len(self.prev_layers)):
+            input_list.append(input_tmp.format(i))
 
         output_list.append("output_0")
 
         # write the CAL file corrisponding to this layer
-        self.write_id_file_CAL(self.name, input_list, output_list, bit_size_directives, path)
+        self.write_id_file_CAL(self.name, input_list, output_list, path)
 
     # write a CAL file related to the layer
-    def write_id_file_CAL(self, node_name, input_list, output_list, bit_size_directives, path):
+    def write_id_file_CAL(self, node_name, input_list, output_list, path):
 
         # initializations of the variables that will contain
         # inputs and outputs templates of the layer
         inputs_actor = ""
         outputs_actor = ""
+
+        ap_fixed_INP_int , ap_fixed_INP_tot,ap_fixed_OUT_int , ap_fixed_OUT_tot, ap_fixed_COEFF_int , ap_fixed_COEFF_tot = self.get_my_size()
 
         # template to be filled
         template = \
@@ -70,50 +75,11 @@ end"""
         # initialized for avoiding errors
         n_bits = ""
 
+        print("input_list",input_list)
         # add all the inputs of the layer
         for index,elem in enumerate(input_list):
 
-            # default value
-            if (bit_size_directives["DEFAULT_BIT_SIZES"]["DATATYPE"] == "float"):
-
-                n_bits = 32
-
-            else:
-
-                n_bits = bit_size_directives["DEFAULT_BIT_SIZES"]["DATA"][0]
-
-            for prim_key in bit_size_directives.keys():
-
-                if prim_key == "Concat":
-
-                    if (bit_size_directives["Concat"]["DATATYPE"] == "float"):
-
-                        n_bits = 32
-
-                    else:
-
-                        n_bits = bit_size_directives["Concat"]["DATA"][0]
-
-                    break
-
-            # do it for all the inputs
-            searched = self.input_
-
-            if "Concat" in bit_size_directives.keys():
-
-                for searched_element in searched:
-
-                    if searched_element in bit_size_directives["Concat"].keys():
-
-                        if (bit_size_directives["Concat"][searched_element]["DATATYPE"] == "float"):
-
-                            n_bits = 32
-
-                        else:
-
-                            n_bits = bit_size_directives["Concat"][searched_element]["DATA"][0]
-
-                        break
+            n_bits = ap_fixed_INP_tot
 
             inputs_actor += template_input.format(n_bits, elem)
 
@@ -142,7 +108,7 @@ end"""
 # METHODS FOR GENERATING HLS FILES
 
     # generate HLS files
-    def write_HLS(self, bit_size_directives, path):
+    def write_HLS(self,path):
 
         self.generate_layer_sizes_h_HLS(path)
 
@@ -150,33 +116,55 @@ end"""
 
         self.generate_concat_ccp_HLS(path)
 
-        self.generate_my_types_h(bit_size_directives,path)
+        self.generate_my_types_h(path)
 
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
+        
+        in_size = {}
+        in_d = {}
+        in_h = {}
+        in_w = {}
+
+        in_size_tmp = \
+"""
+        #define in_s_d_{} {}
+        #define in_s_h_{} {}
+        #define in_s_w_{} {}
+"""
 
         content_file = \
 """
 #ifndef LAYER_SIZES_H
 #define LAYER_SIZES_H
 
-        #define in_s_d {}
-        #define in_s_h {}
-        #define in_s_w {}
+"""
+
+        output_tmp = \
+"""
+        #define in_s_h in_s_h_0
+        #define in_s_w in_s_w_0
         #define out_s_d {}
         #define out_s_h {}
         #define out_s_w {}        
 #endif     
 """
+        for i in range(len(self.prev_layers)):
+            in_size[i] = self.model.get_tensor_shape(self.node.input[i])
+            in_d[i], in_h[i], in_w[i] = in_size[i][1:]
+            content_file += in_size_tmp.format(i, in_d[i],i, in_h[i],i, in_w[i])
         #CHW
-        in_d,in_h,in_w = self.isizes
-        out_d, out_h, out_w, = self.osizes
+        
 
-        content_file = content_file.format(
-                                  in_d,in_h,in_w,
+        
+        out_d, out_h, out_w, = self.osizes[1:]
+
+        
+        output_tmp = output_tmp.format(
                                   out_d, out_h, out_w,
                                   )
 
+        content_file +=  output_tmp
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
@@ -195,21 +183,25 @@ end"""
 	#include "layer_sizes_AAA.h"
 	
 	using namespace hls;
-	void AAA(BBB, stream <DATA> &output_0);
+	void AAA(BBB, stream <ACT_mac> &output_0);
 #endif
 """
-
-
         input_list = []
+        output_list = []
 
-        for input_name in self.map_of_in_elements.keys():
-
-            input_list.append(input_name)
+        input_tmp = "input_{}"
 
 
+        for i in range(len(self.prev_layers)):
+            input_list.append(input_tmp.format(i))
+
+        output_list.append("output_0")
+
+
+    
 
         input_template = \
-""" stream<DATA> &DDD"""
+""" stream<ACT_mac> &DDD"""
 
         function_input = ""
 
@@ -246,10 +238,10 @@ end"""
 #include "AAA.h"
 using namespace hls;
 
-void AAA(BBB, stream <DATA> &output_0){
+void AAA(BBB, stream <ACT_mac> &output_0){
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-	DATA current;
+	ACT_mac current;
 	ITER i, j, k;
 
 	for(k=0; k<in_s_h; k++){
@@ -262,13 +254,19 @@ void AAA(BBB, stream <DATA> &output_0){
 
 
         input_list = []
+        output_list = []
 
-        for input_name in self.map_of_in_elements.keys():
+        input_tmp = "input_{}"
 
-            input_list.append(input_name)
+
+        for i in range(len(self.prev_layers)):
+            input_list.append(input_tmp.format(i))
+
+        output_list.append("output_0")
+
 
         input_template = \
-""" stream<DATA> &EEE"""
+""" stream<ACT_mac> &EEE"""
 
         function_input = ""
 
@@ -285,7 +283,7 @@ void AAA(BBB, stream <DATA> &output_0){
 
         code_template = \
 """
-			for(i=0; i<in_s_d; i++){
+			for(i=0; i<in_s_d_XXX; i++){
 				current = FFF.read();
 				output_0.write(current);
 			}
@@ -295,7 +293,8 @@ void AAA(BBB, stream <DATA> &output_0){
 
         for index,input_element in enumerate(input_list):
 
-            function_code += code_template.replace("FFF", input_element)
+            code_tmp = code_template.replace("XXX", str(index))
+            function_code += code_tmp.replace("FFF", input_element)
 
 
         content_file = content_file.replace("AAA", self.name)
@@ -310,16 +309,15 @@ void AAA(BBB, stream <DATA> &output_0){
             new_file.write(content_file)
 
     # generate a "my tipes" file
-    def generate_my_types_h(self,bit_size_directives,path):
+    def generate_my_types_h(self,path):
 
         template = \
 """
-#ifndef MY_TYPES_S
-#define MY_TYPES_S
+#ifndef MY_TYPES_AAA
+#define MY_TYPES_AAA
     #include <ap_fixed.h>
     #include "layer_sizes_AAA.h"
-    typedef XXX DATA;
-    typedef YYY COEFF;
+    typedef XXX ACT_mac;
     typedef short ITER;
 #endif
 """
@@ -330,105 +328,16 @@ void AAA(BBB, stream <DATA> &output_0){
         ap_fixed_COEFF_int = ""
 
         template_ap_fixed = \
-            """ap_fixed< BBB, CCC, AP_RND, AP_SAT> """
+"""ap_fixed< BBB, CCC, AP_RND, AP_SAT> """
 
-        # data
-        if (bit_size_directives["DEFAULT_BIT_SIZES"]["DATATYPE"] == "float"):
 
-            selector_DATA = "float"
+        ap_fixed_DATA_tot, ap_fixed_DATA_int = self.get_MAC_size()
+       
+        template = template.replace("AAA", self.name)
+        template_ap_fixed = template_ap_fixed.replace("BBB", str(ap_fixed_DATA_tot))
+        template_ap_fixed = template_ap_fixed.replace("CCC", str(ap_fixed_DATA_int))
 
-        else:
-
-            ap_fixed_DATA_tot = bit_size_directives["DEFAULT_BIT_SIZES"]["DATA"][0]
-            ap_fixed_DATA_int = bit_size_directives["DEFAULT_BIT_SIZES"]["DATA"][1]
-            selector_DATA = "ap_fixed"
-
-        for prim_key in bit_size_directives.keys():
-
-            if prim_key == "Concat":
-
-                if (bit_size_directives["Concat"]["DATATYPE"] == "float"):
-
-                    selector_DATA = "float"
-
-                else:
-
-                    ap_fixed_DATA_tot = bit_size_directives["Concat"]["DATA"][0]
-                    ap_fixed_DATA_int = bit_size_directives["Concat"]["DATA"][1]
-                    selector_DATA = "ap_fixed"
-
-                break
-
-        searched = self.input_
-
-        if "Concat" in bit_size_directives.keys():
-
-            for searched_element in searched:
-
-                if searched_element in bit_size_directives["Concat"].keys():
-
-                    if (bit_size_directives["Concat"][searched_element]["DATATYPE"] == "float"):
-
-                        selector_DATA = "float"
-
-                    else:
-
-                        ap_fixed_DATA_tot = bit_size_directives["Concat"][searched_element]["DATA"][0]
-                        ap_fixed_DATA_int = bit_size_directives["Concat"][searched_element]["DATA"][1]
-                        selector_DATA = "ap_fixed"
-
-                    break
-
-        # coeff
-        if (bit_size_directives["DEFAULT_BIT_SIZES"]["DATATYPE"] == "float"):
-
-            selector_COEFF = "float"
-
-        else:
-
-            ap_fixed_COEFF_tot = bit_size_directives["DEFAULT_BIT_SIZES"]["COEFF"][0]
-            ap_fixed_COEFF_int = bit_size_directives["DEFAULT_BIT_SIZES"]["COEFF"][1]
-            selector_COEFF = "ap_fixed"
-
-        for prim_key in bit_size_directives.keys():
-
-            if prim_key == "Concat":
-
-                if (bit_size_directives["Concat"]["DATATYPE"] == "float"):
-
-                    selector_COEFF = "float"
-
-                else:
-
-                    ap_fixed_COEFF_tot = bit_size_directives["Concat"]["COEFF"][0]
-                    ap_fixed_COEFF_int = bit_size_directives["Concat"]["COEFF"][1]
-                    selector_COEFF = "ap_fixed"
-
-                break
-
-        # create content file
-        content_file = template.replace("AAA", self.name)
-
-        if (selector_DATA == "float"):
-
-            content_file = content_file.replace("XXX", "float")
-
-        else:
-
-            tmp = template_ap_fixed.replace("BBB", str(ap_fixed_DATA_tot)).replace("CCC",
-                                                                                   str(ap_fixed_DATA_int))
-            content_file = content_file.replace("XXX", tmp)
-
-        if (selector_COEFF == "float"):
-
-            content_file = content_file.replace("YYY", "float")
-
-        else:
-
-            tmp = template_ap_fixed.replace("BBB", str(ap_fixed_COEFF_tot)).replace("CCC",
-                                                                                    str(ap_fixed_COEFF_int))
-            content_file = content_file.replace("YYY", tmp)
-
+        content_file = template.replace("XXX", template_ap_fixed)
         # name of the file
         name_file = "my_types_" + self.name + ".h"
 

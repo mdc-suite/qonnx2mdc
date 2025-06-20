@@ -12,40 +12,15 @@ from onnx import helper
 from .HLSWriter import  HLSWriter
 
 #buffers
-class MaxPoolWriter(HLSWriter):
+class GlobalAveragePoolWriter(HLSWriter):
 
     def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
 
-        stride = [0,0]
-        kernel_shape = [0,0]
-        pads = [0,0,0,0]
-
-
-        for attr in node.attribute:
-            if attr.name == "pads":
-                pads = helper.get_attribute_value(attr)
-            elif attr.name == "strides":
-                stride = helper.get_attribute_value(attr)
-            elif attr.name == "kernel_shape":
-                kernel_shape = helper.get_attribute_value(attr)
-            
-            
-
-
-
-        # recover hyperparameters
-
-        self.pool_mode = self.getPoolMode()
-        self.stride = stride
-        self.kernel = kernel_shape
-        self.padding = pads
-
         self.types_file = types_file
         self.sizes_file = sizes_file
-
 
 # -----------------------------------------------------
 # METHODS FOR GENERATING CAL FILES
@@ -62,16 +37,16 @@ class MaxPoolWriter(HLSWriter):
 
         self.write_id_file_CAL( input_list, output_list, path)
 
-
+        '''
         # buffer CAL file creation
         actor_name = "line_buffer_" + self.name
-        actor_name = actor_name.replace("MaxPool","mp")
+        actor_name = actor_name.replace("GlobalAvgPool","gap")
 
         input_buffer = "input_0"
         output_buffer = "output_0"
 
         self.write_line_buffer_file_CAL(actor_name, input_buffer, output_buffer, path, )
-
+        '''
     # write a CAL file related to the layer
     def write_id_file_CAL(self, input_list, output_list, path):
 
@@ -167,13 +142,13 @@ end"""
 
         self.generate_layer_sizes_h_HLS(path)
 
-        self.generate_maxpool_h_HLS(path)
+        self.generate_globalavgpool_h_HLS(path)
 
-        self.generate_maxpool_ccp_HLS(path)
+        self.generate_globalavgpool_ccp_HLS(path)
 
-        self.generate_line_buffer_h_HLS(path)
+        #self.generate_line_buffer_h_HLS(path)
 
-        self.generate_line_buffer_ccp_HLS(path)
+        #self.generate_line_buffer_ccp_HLS(path)
 
         self.generate_my_types_h(path)
 
@@ -192,17 +167,6 @@ end"""
 	#define out_s_d_BBB {}
 	#define out_s_h_BBB {}
 	#define out_s_w_BBB {}
-	
-	#define kern_s_k_BBB {}
-	#define kern_s_d_BBB {}
-	#define kern_s_h_BBB {}
-	#define kern_s_w_BBB {}
-	
-	#define stride_h_BBB {}
-	#define stride_w_BBB {}
-	
-	#define pad_h_BBB {}
-	#define pad_w_BBB {}  
 """
 
         content_file = \
@@ -217,43 +181,26 @@ end"""
 	#define out_s_h_BBB {}
 	#define out_s_w_BBB {}
 	
-	#define kern_s_k_BBB {}
-	#define kern_s_d_BBB {}
-	#define kern_s_h_BBB {}
-	#define kern_s_w_BBB {}
-	
-	#define stride_h_BBB {}
-	#define stride_w_BBB {}
-	
-	#define pad_h_BBB {}
-	#define pad_w_BBB {}      
+
 #endif     
 """
         number = ''.join(filter(str.isdigit, self.name))
-        content_file = content_file.replace("BBB", "m"+number)
-        template = template.replace("BBB", "m"+number)
+        content_file = content_file.replace("BBB", "gap"+number)
+        template = template.replace("BBB", "gap"+number)
         in_d, in_h, in_w = self.isizes[1:]
         out_d, out_h, out_w, = self.osizes[1:]
-        kern_k, kern_d= out_d, in_d
-        kern_h, kern_w =self.kernel
-        stride_h,stride_w = self.stride
-        pad_h,pad_w = self.padding[0:2]        
+      
 
         content_file = content_file.format(
                                   in_d,in_h,in_w,
                                   out_d, out_h, out_w,
-                                  kern_k, kern_d, kern_h, kern_w,
-                                  stride_h, stride_w, 
-                                  pad_h, pad_w
                                   )
         template = template.format(
                                   in_d,in_h,in_w,
                                   out_d, out_h, out_w,
-                                  kern_k, kern_d, kern_h, kern_w,
-                                  stride_h, stride_w, 
-                                  pad_h, pad_w  
-                                    )
+                                  ) 
         content_file = content_file.replace("AAA", self.name)
+
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
@@ -261,11 +208,10 @@ end"""
             new_file.write(content_file)
 
         with open(os.path.join(path, self.sizes_file), "a") as new_file:
-
-            new_file.write(template)
+            new_file.write(template)    
             
     #generate X.h file
-    def generate_maxpool_h_HLS(self,path):
+    def generate_globalavgpool_h_HLS(self,path):
 
         content_file = \
 """
@@ -274,13 +220,13 @@ end"""
 	#include <hls_stream.h>
 	#include "my_types_AAA.h"
 	using namespace hls;
-	void AAA(stream<ACT_BBB> &input_0, stream <ACT_BBB> &output_0);
+	void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0);
 #endif
 """
 
         content_file = content_file.replace("AAA", self.name)
         number = ''.join(filter(str.isdigit, self.name))
-        content_file = content_file.replace("BBB", "m"+number)
+        content_file = content_file.replace("BBB", "gap"+number)
 
         if self.is_Input_prev():
             content_file = content_file.replace("CCC", "in")
@@ -296,61 +242,70 @@ end"""
             new_file.write(content_file)
 
     #generate X.ccp file
-    def generate_maxpool_ccp_HLS(self,path):
+    def generate_globalavgpool_ccp_HLS(self,path):
 
+ 
         content_file = \
 """
 #include <hls_stream.h>
+//#include <hls_video.h>
+#include "my_hls_video.h"
 #include <ap_fixed.h>
 
-#include "my_types_AAA.h"
 #include "layer_sizes_AAA.h"	
-#include "AAA.h"
+#include "my_types_AAA.h"
 using namespace hls;
 
- 
-void AAA(stream<ACT_BBB> &input_0, stream <ACT_BBB> &output_0){
+void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 #pragma HLS INTERFACE ap_ctrl_none port=return
-	
 	ITER pout;
 	ITER hout;
 	ITER wout;
+    ITER count;
+	
+	ITER pin;	
+	ITER hin;
+	ITER win;
 	
 	ITER hkern;
 	ITER wkern;
+
+	ACT_CCC in_val;
+	ACT_BBB out_val;
 	
-	ACT_BBB current;
-	ACT_BBB max;
-	
-	bool first_element;
-	
-	for(hout=0; hout<out_s_h_BBB; hout++){
-		for(wout=0; wout<out_s_w_BBB; wout++){
-			for(pout=0; pout<out_s_d_BBB; pout++){
-				first_element = true;
-				for(hkern=0; hkern < kern_s_h_BBB ; hkern++){
-					for(wkern=0; wkern < kern_s_w_BBB; wkern++){
-						input_0.read(current);
-						if(first_element){
-							max = (ACT_BBB)current;
-							first_element = false;
-						} else{
-							max = (max > (ACT_BBB)current) ? max : (ACT_BBB)current;
-						}
+	ACT_mac sum[out_s_d_BBB];  // Ensure initialization happens only once
+
+    for(count = 0; count < out_s_d_BBB; count++){
+        sum[count] = 0;
+    }
+
+	for(hout = 0; hout < in_s_h_BBB; hout++) {
+		for(wout = 0; wout < in_s_w_BBB; wout++) {
+			for (pin = 0; pin < in_s_d_BBB; pin++) {
+            #pragma HLS PIPELINE rewind
+					input_0.read(in_val);
+
+					sum[pin] = sum[pin] + in_val;
 					}
 				}
-				output_0.write(max);
 			}
-		}
-	}
-}
 	
+			
+
+		//Now it can write a submatrix
+Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
+
+						out_val = (ACT_BBB)(sum[pout]/(in_s_h_BBB * in_s_w_BBB));
+						output_0.write(out_val);
+					}
+    }
 """
+     
 
         content_file = content_file.replace("AAA", self.name)
 
         number = ''.join(filter(str.isdigit, self.name))
-        content_file = content_file.replace("BBB", "m"+number)
+        content_file = content_file.replace("BBB", "gap"+number)
 
         if self.is_Input_prev():
             content_file = content_file.replace("CCC", "in")
@@ -381,7 +336,7 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_BBB> &output_0){
 """
         
         content_file = content_file.replace("AAA",self.name)
-        content_file = content_file.replace("line_buffer_MaxPool","line_buffer_mp")
+        content_file = content_file.replace("line_buffer_GlobalAvgPool","line_buffer_gap")
         if self.is_Input_prev():
             content_file = content_file.replace("CCC", "in")
         else:
@@ -391,10 +346,10 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_BBB> &output_0){
 
 
         number = ''.join(filter(str.isdigit, self.name))
-        content_file = content_file.replace("BBB", "m"+number)
+        content_file = content_file.replace("BBB", "gap"+number)
 
         name_file = "line_buffer_{}.h".format(self.name)
-        name_file = name_file.replace("MaxPool","mp")
+        name_file = name_file.replace("GlobalAvgPool","gap")
 
         with open(os.path.join(path, name_file), "w") as new_file:
 
@@ -432,36 +387,20 @@ void line_buffer_AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 
 	ACT_CCC in_val;
 	ACT_BBB out_val;
-	bool out_of_bounds;
 	
-	LineBuffer<kern_s_h_BBB,in_s_w_BBB+2*pad_w_BBB, ACT_CCC> buffer[in_s_d_BBB];
+	
+    for (pin = 0; pin < in_s_d_BBB; pin++) {
+	#pragma HLS PIPELINE rewind
+						sum[pin] = 0;
+						}
 
-	hin = 0;
-	win = 0;
-	
-	for(hout = 0; hout < out_s_h_BBB; hout++) {		
+	for(hout = 0; hout < out_s_h_BBB; hout++) {
 		for(wout = 0; wout < out_s_w_BBB; wout++) {
-Loop_while:while( (win <= (wout * stride_w_BBB + kern_s_w_BBB-1)) || (hin < (hout * stride_h_BBB + kern_s_h_BBB-1) ) ){
-				out_of_bounds = ((hin<pad_h_BBB) || (hin>pad_h_BBB+in_s_h_BBB-1) || (win<pad_w_BBB) || (win>pad_w_BBB+in_s_w_BBB-1))? true : false;
-Loop_lettura:for (pin = 0; pin < in_s_d_BBB; pin++) {
-#pragma HLS PIPELINE rewind
-					if(out_of_bounds){
-						in_val=0;
-					} else{
-						input_0.read(in_val);
-					}
-					buffer[pin].shift_pixels_up(win);
-					buffer[pin].insert_bottom_row(in_val,win);
-					}
-				// Update input indexes
-				if(win < in_s_w_BBB-1+2*pad_w_BBB){ 
-					win++;
-					}
-				else {
-					win = 0; 
-					hin++;
-					if(hin > (hout * stride_h_BBB + kern_s_h_BBB-1) ){
-					break;
+			for (pin = 0; pin < in_s_d_BBB; pin++) {
+            #pragma HLS PIPELINE rewind
+					input_0.read(in_val);
+
+					sum[pin] = sum[pin] + in_val;
 					}
 				}
 			}
@@ -470,24 +409,18 @@ Loop_lettura:for (pin = 0; pin < in_s_d_BBB; pin++) {
 
 		//Now it can write a submatrix
 Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
-				for(hkern=0; hkern < kern_s_h_BBB; hkern++){
-	Loop_interno: for(wkern=0; wkern < kern_s_w_BBB; wkern++){
-#pragma HLS DEPENDENCE variable=buffer array inter false
-#pragma HLS PIPELINE rewind
-						out_val = (ACT_BBB)buffer[pout].getval(hkern, wout*stride_w_BBB + wkern);
+
+						out_val = sum[pout]/out_s_d_BBB;
+						count = count + 1;
 						output_0.write(out_val);
 					}
-				}
-			}
-		}
-	}
-}	
+    }
 """
 
         content_file = content_file.replace("AAA",self.name)
         number = ''.join(filter(str.isdigit, self.name))
-        content_file = content_file.replace("BBB", "m"+number)
-        content_file = content_file.replace("line_buffer_MaxPool","line_buffer_mp")
+        content_file = content_file.replace("BBB", "gap"+number)
+        content_file = content_file.replace("line_buffer_GlobalAvgPool","line_buffer_gap")
         if self.is_Input_prev():
             content_file = content_file.replace("CCC", "in")
         else:
@@ -497,7 +430,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
 
 
         name_file = "line_buffer_{}.cpp".format(self.name)
-        name_file = name_file.replace("MaxPool","mp")
+        name_file = name_file.replace("GlobalAvgPool","gap")
 
         with open(os.path.join(path, name_file), "w") as new_file:
 
@@ -512,6 +445,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
 // AAA types
     typedef XXX ACT_BBB;
 """
+
 
         template = \
 """
@@ -544,7 +478,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         template_types = template_types.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
-        number = "m"+ number
+        number = "gap"+ number
 
         content_file = content_file.replace("BBB", number)
         template_types = template_types.replace("BBB", number)
@@ -624,7 +558,7 @@ Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
-        
+
         with open(os.path.join(path, self.types_file), "a") as new_file:
             new_file.write(template_types)
 
@@ -784,32 +718,8 @@ template<int ROWS, int COLS, typename T> T& LineBuffer<ROWS, COLS, T>::operator 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
 
-    def generate_my_Input_types_h(self,path):
+   
+   
 
 
-            template = \
-    """
-    #ifndef MY_TYPES_Input0
-    #define MY_TYPES_Input0
-        #include <ap_fixed.h>
-        
-        typedef ap_fixed< 16, 6, AP_RND, AP_SAT>  ACT_in;
-        typedef short ITER;
-    #endif
-    """
-            
-            # name of the file
-            name_file = "my_types_Input0.h"
-
-            # file creation
-            with open(os.path.join(path, name_file), "w") as new_file:
-                new_file.write(template)
-
-    # return pool mode of the node
-    def getPoolMode(self):
-
-      # if the node has a "MaxPool" operator
-      if self.operation == 'MaxPool':
-
-        # return value
-        return 0
+   
