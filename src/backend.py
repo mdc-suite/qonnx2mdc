@@ -114,11 +114,9 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         node.domain= "qonnx.custom_op.general"
 
         # Check if the node represents a ReLU operation
-        if node.op_type == "Relu":
+        if node.op_type == "Relu" or node.op_type == "Conv":
             relu_check = True
-            # Here you can add your logic to handle the ReLU node
-            # For example, you can check its successors to see if a quantization layer follows
-            # If so, extract parameters and skip the quantization layer
+   
         # Check the type of the node and call the corresponding writer function
         writer_function = layer_writers.get(node.op_type)
         if writer_function:
@@ -246,6 +244,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
         # Iterate through the keys and values in the quantizer_config dictionary
         for node in model.graph.node:
+
             if node.op_type != "Quant" and node.op_type != "BipolarQuant":
                 predecessors = onnx_model.find_direct_predecessors(node)
 
@@ -255,8 +254,16 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 else:
                     predecessor = predecessors[0]
                     if predecessor.op_type == "Quant" or predecessor.op_type == "BipolarQuant":
-                        predecessor = onnx_model.find_direct_predecessors(predecessor)[0]
-                    prev_layer_size = get_tensor_sizes(predecessor, output_info)
+                        if onnx_model.find_direct_predecessors(predecessor) is not None:
+                            predecessor = onnx_model.find_direct_predecessors(predecessor)[0]
+                            prev_layer_size = get_tensor_sizes(predecessor, output_info)
+                        elif predecessor.input[0] == input_name:
+                            predecessor = init.net_input
+                            prev_layer_size = default_precision
+                        else:
+                            raise ValueError(f"Predecessor {predecessor.name} has no predecessors and is not the input node.")
+
+                    
             else:
                 prev_layer_size = default_precision
 
@@ -280,12 +287,34 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 }
 
             elif node.op_type == "Gemm" or node.op_type == "Conv":
-                bit_width = onnx_model.get_tensor_datatype(node.input[1])
-                bit_width = parse_value(bit_width)
+                
+                print(f"Node {node.name} ")
+                input_size = prev_layer_size 
+                if onnx_model.find_direct_predecessors(node) is not None:
+                    print(f"Node {node.name} has predecessors")
+                    print(f"Node {node.name} predecessors are {onnx_model.find_direct_predecessors(node)}")
+                    
+                    predecessor = onnx_model.find_direct_predecessors(node)[0]
+                    print("the predecessor is:", predecessor.op_type)
+                    if predecessor.op_type == "Quant":
+                        tensor_name = predecessor.input[3]
+                        for initializer in init.initializer:
+                            if initializer.name == tensor_name:
+                                bit_width = onnx.numpy_helper.to_array(initializer)
+                                bit_width = int(bit_width)  
+                                print(f"Node {node.name} has a predecessor {predecessor.name} with bit width {bit_width}")
+                                input_size = [bit_width, int(bit_width / 2)]
+                               
+                else:    
+                    bit_width = onnx_model.get_tensor_datatype(node.input[1])
+                    bit_width = parse_value(bit_width)
+
+                
+                
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
                 "DATATYPE": "ap_fixed",
-                "INPUT": prev_layer_size,
+                "INPUT": input_size,
                 "COEFF": [bit_width, int(bit_width / 2)],
                 "OUTPUT": mac_size     
                 }
