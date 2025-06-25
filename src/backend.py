@@ -15,8 +15,9 @@ from writers.Initializer import Initializer
 from qonnx.custom_op.registry import getCustomOp
 
 
-# Import your layer writer functions
-from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter 
+#check how to make this imports correctly
+#maybe a python package with a __init__.py file is required
+from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter, GlobalAveragePoolWriter # Import your layer writer functions
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
 
@@ -99,7 +100,12 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         "BatchNormalization": BatchNormalizationWriter,
         "MaxPool": MaxPoolWriter,
         "Sigmoid": SigmoidWriter,
+<<<<<<< HEAD
        
+=======
+        "GlobalAveragePool": GlobalAveragePoolWriter,
+        # Add more mappings for other layer types as needed
+>>>>>>> 5929702 (major changes for adapting 1d layers)
     }
 
     relu_check = False
@@ -237,7 +243,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "COEFF": [bit_width, int(bit_width / 2)],
                 "OUTPUT": mac_size     
                 }
-            elif node.op_type == "MaxPool":
+            elif node.op_type == "MaxPool" or node.op_type == "GlobalAveragePool":
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
                 "DATATYPE": "ap_fixed",
