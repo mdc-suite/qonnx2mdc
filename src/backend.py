@@ -15,10 +15,12 @@ from writers.Initializer import Initializer
 from qonnx.custom_op.registry import getCustomOp
 
 
-# Import your layer writer functions
-from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter 
+#check how to make this imports correctly
+#maybe a python package with a __init__.py file is required
+from writers import ConvWriter, GemmWriter, ReluWriter, BatchNormalizationWriter, MaxPoolWriter, SigmoidWriter, GlobalAveragePoolWriter , ConcatWriter# Import your layer writer functions
 from writers.XDFWriter import XDFWriter
 from writers.TCLWriter import TCLWriter
+from writers.TestBenchCppWriter import TestBenchCppWriter
 
 
 
@@ -99,11 +101,18 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         "BatchNormalization": BatchNormalizationWriter,
         "MaxPool": MaxPoolWriter,
         "Sigmoid": SigmoidWriter,
+<<<<<<< HEAD
        
+=======
+        "GlobalAveragePool": GlobalAveragePoolWriter,
+        "Concat": ConcatWriter
+        # Add more mappings for other layer types as needed
+>>>>>>> 5929702 (major changes for adapting 1d layers)
     }
 
     relu_check = False
     writer_list = []
+    count = 0
 # Iterate through each node in the graph
     for node in onnx_model.graph.node:
         node.domain= "qonnx.custom_op.general"
@@ -122,25 +131,72 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
             if not os.path.exists(path_writers_cpp):
                 # Create the folder
                 os.makedirs(path_writers_cpp)
-            
-            
 
-            Writer = writer_function(node, onnx_model, init, json_file)  # Call the writer function with the node
-            Writer.write_CAL(path_cal)
+
+            if count == 0:
+                count += 1
+                types_file = path_cpp + "/my_types.h"
+                size_file = path_cpp + "/my_sizes.h"
+                types_tmp = """
+#ifndef MY_TYPES_H
+#define MY_TYPES_H
+#include <ap_fixed.h>
+#include "my_sizes.h" 
+
+    typedef ap_fixed< 32, 16, AP_RND, AP_SAT>  ACT_mac;
+    typedef ap_fixed< 32, 16, AP_RND, AP_SAT>  ACT_in;
+
+                """
+                size_tmp = """
+#ifndef MY_SIZES_H
+#define MY_SIZES_H
+                """
+                # file creation
+                with open(types_file, "w") as new_file:
+                    new_file.write(types_tmp)
+                
+                # file creation
+                with open(size_file, "w") as new_file:
+                    new_file.write(size_tmp)
+
+                Writer = writer_function(node, onnx_model, init, json_file, types_file, size_file) 
+
+            else:
+                Writer = writer_function(node, onnx_model, init, json_file, types_file, size_file)            
+                
+            tmp_end = """
+#endif
+                """
+            
+            Writer.write_CAL(path_cal)  
             Writer.write_HLS(path_writers_cpp)
             writer_list.append(Writer)
+            
+
+            
             
             
         elif node.op_type == "Quant" and relu_check:
             relu_check = False
         else:
             print(f"Unsupported layer type: {node.op_type}")
+        
+         
 
     XDFWriter_ = XDFWriter(writer_list, path_cal)
 
     TCLWriter_ = TCLWriter(writer_list, output_path)
 
+    TestBenchCppWriter_ = TestBenchCppWriter(writer_list, path_cpp)
 
+    with open(types_file, "a") as new_file:
+                new_file.write(tmp_end)
+        
+    # file creation
+    with open(size_file, "a") as new_file:
+        new_file.write(tmp_end)   
+
+        
 def parse_value(value_str):
     import re
     if value_str == "BINARY":
@@ -237,7 +293,15 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "COEFF": [bit_width, int(bit_width / 2)],
                 "OUTPUT": mac_size     
                 }
-            elif node.op_type == "MaxPool":
+            elif node.op_type == "MaxPool" or node.op_type == "GlobalAveragePool":
+                output_info[node.name]={
+                "OP_TYPE": node.op_type,
+                "DATATYPE": "ap_fixed",
+                "INPUT": prev_layer_size,
+                "OUTPUT": prev_layer_size
+                }
+
+            elif node.op_type == "Concat":
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
                 "DATATYPE": "ap_fixed",
@@ -258,7 +322,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
                     
                 else:
-                    bit_width = default_precision
+                    bit_width = default_precision[0]
 
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,

@@ -15,7 +15,7 @@ from .HLSWriter import  HLSWriter
 #buffers
 class ConvWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -42,6 +42,8 @@ class ConvWriter(HLSWriter):
         self.padding = pads
         self.group = group
         self.dilation = dilations
+        self.types_file = types_file
+        self.sizes_file = sizes_file
         
 
         # recover parameters
@@ -286,7 +288,27 @@ end"""
         
     # generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self, path):
+        
+        template = \
+"""
+    #define in_s_d_AAA {}
+    #define in_s_h_AAA {}
+    #define in_s_w_AAA {}
+    #define out_s_d_AAA {}
+    #define out_s_h_AAA {}
+    #define out_s_w_AAA {}
 
+    #define kern_s_k_AAA {}
+    #define kern_s_d_AAA {}
+    #define kern_s_h_AAA {}
+    #define kern_s_w_AAA {}
+
+    #define stride_h_AAA {}
+    #define stride_w_AAA {}
+
+    #define pad_h_AAA {}
+    #define pad_w_AAA {}  
+"""
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -314,6 +336,7 @@ end"""
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         content_file = content_file.replace("AAA", "c"+number)
+        template = template.replace("AAA", "c"+number)
 
         
         in_d, in_h, in_w = self.isizes[1:]
@@ -334,10 +357,21 @@ end"""
             pad_h, pad_w
         )
 
+        template = template.format(
+            in_d, in_h, in_w,
+            out_d, out_h, out_w,
+            kern_k, kern_d, kern_h, kern_w,
+            stride_h, stride_w,
+            pad_h, pad_w
+        )
+
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+            new_file.write(template)
 
     # generate X.h file
     def generate_conv_h_HLS(self, path):
@@ -668,6 +702,7 @@ Loop_scrittura:for(hkern=0; hkern < kern_s_h_BBB ; hkern++){
         weight = weight.replace("AAA", self.name)
 
         #enter_id = self.map_of_in_elements["bias"]
+        print(self.node.input)
         enter_id = "_"+self.node.input[2]
 
         bias_values = str(self.init.parameters_values[enter_id].tolist())
@@ -861,6 +896,15 @@ void bias_AAA(stream <KERN_ITEM_BBB> &bias_AAA_r){
     def generate_my_types_h(self , path ):
 
 
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+    typedef YYY COEFF_BBB;
+    typedef struct kern_item_BBB {COEFF_BBB w[kern_s_k_BBB];} KERN_ITEM_BBB;
+"""
+
+
         template = \
 """
 #ifndef MY_TYPES_AAA_S
@@ -888,15 +932,15 @@ void bias_AAA(stream <KERN_ITEM_BBB> &bias_AAA_r){
     typedef short ITER;
 #endif
 """
-         
-        # fill the template
-        template = template.replace("AAA", self.name)
+
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         number = "c"+ number
-
-        
-
+         
+        # fill the template
+        template_types = template_types.replace("AAA", self.name)
+        template_types = template_types.replace("BBB", number)
+        template = template.replace("AAA", self.name)
         template = template.replace("BBB", number)
         #initialization
         ap_fixed_DATA_tot = ""
@@ -926,6 +970,7 @@ void bias_AAA(stream <KERN_ITEM_BBB> &bias_AAA_r){
         
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot)).replace("CCC", str(ap_fixed_INP_int))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX", tmp)
         mac_value_tot,mac_value_int = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
         content_file = content_file.replace("ZZZ",tmp)
@@ -934,6 +979,7 @@ void bias_AAA(stream <KERN_ITEM_BBB> &bias_AAA_r){
 
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_COEFF_tot)).replace("CCC", str(ap_fixed_COEFF_int))
         content_file = content_file.replace("YYY", tmp)
+        template_types = template_types.replace("YYY", tmp)
 
         ##############--PREVIOUS LAYER--############################
 
@@ -974,6 +1020,9 @@ void bias_AAA(stream <KERN_ITEM_BBB> &bias_AAA_r){
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
     def generate_my_hls_video_h(self, path):
         content_file = \
@@ -1132,27 +1181,3 @@ template<int ROWS, int COLS, typename T> T& LineBuffer<ROWS, COLS, T>::operator 
             new_file.write(content_file)
 
 
-# generate a "my tipes" file
-    def generate_my_Input_types_h(self,path):
-
-
-        template = \
-"""
-#ifndef MY_TYPES_Input0
-#define MY_TYPES_Input0
-    #include <ap_fixed.h>
-    
-    typedef ap_fixed< 16, 6, AP_RND, AP_SAT>  ACT_in;
-    typedef short ITER;
-#endif
-"""
-        
-        # name of the file
-        name_file = "my_types_Input0.h"
-
-        # file creation
-        with open(os.path.join(path, name_file), "w") as new_file:
-            new_file.write(template)
-    
-
-    

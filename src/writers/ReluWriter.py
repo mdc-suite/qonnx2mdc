@@ -12,7 +12,7 @@ from .HLSWriter import  HLSWriter
 
 class ReluWriter(HLSWriter):
 
-    def __init__(self, node, model, init, json_file):
+    def __init__(self, node, model, init, json_file, types_file, sizes_file):
 
         # recover data from reader node
         self.recover_data_from_reader(node, model, init, json_file)
@@ -20,7 +20,8 @@ class ReluWriter(HLSWriter):
         
         
         
-
+        self.types_file = types_file
+        self.sizes_file = sizes_file
         # recover hyperparameters
         # save all these hyperparameters
         #self.relu_alpha = self.relu_params()
@@ -176,6 +177,16 @@ end"""
     #generate layer_size_X.h file
     def generate_layer_sizes_h_HLS(self,path):
 
+        template = \
+"""
+    #define in_s_d_BBB {}
+    #define in_s_h_BBB {}
+    #define in_s_w_BBB {}
+    #define out_s_d_BBB {}
+    #define out_s_h_BBB {}
+    #define out_s_w_BBB {}   
+"""
+
         content_file = \
 """
 #ifndef LAYER_SIZES_AAA_H
@@ -190,10 +201,15 @@ end"""
 #endif     
 """
         #CHW
+        
         if (len(self.isizes)) == 2 :
             if self.isizes[1] == 1 or self.isizes[1] == -1:
                 in_d = 1
                 in_w = self.isizes[2]
+                in_h = 1
+            elif self.isizes[0] == 1 or self.isizes[0] == -1:
+                in_d = 1
+                in_w = self.isizes[1]
                 in_h = 1
             else:
                 in_d,in_h,in_w = self.isizes[1:]
@@ -205,6 +221,10 @@ end"""
                 out_d = 1
                 out_w = self.osizes[2]
                 out_h = 1
+            elif self.osizes[0] == 1 or self.osizes[0] == -1:
+                out_d = 1
+                out_w = self.osizes[1]
+                out_h = 1
             else:
                 out_d, out_h, out_w, = self.osizes[1:]
         else:
@@ -212,6 +232,10 @@ end"""
         
 
         content_file = content_file.format(
+                                  in_d,in_h,in_w,
+                                  out_d, out_h, out_w,
+                                  )
+        template = template.format(
                                   in_d,in_h,in_w,
                                   out_d, out_h, out_w,
                                   )
@@ -223,11 +247,15 @@ end"""
 
 
         content_file = content_file.replace("BBB", number)
+        template = template.replace("BBB", number)
         name_file = "layer_sizes_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
 
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.sizes_file), "a") as new_file:
+            new_file.write(template)
 
     #generate X.h file
     def generate_relu_h_HLS(self,path):
@@ -300,7 +328,12 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
 
     # generate a "my tipes" file
     def generate_my_types_h(self,path):
-
+        
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+"""
 
         template = \
 """
@@ -330,6 +363,7 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
          
         # fill the template
         content_file = template.replace("AAA", self.name)
+        template_types = template_types.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         number = "r"+ number
@@ -343,6 +377,7 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
             template = template.replace("CCC", f"{first_letters[0].lower()}{last_number}")
 
         content_file = content_file.replace("BBB", number)
+        template_types = template_types.replace("BBB", number)
         #initialization
         ap_fixed_DATA_tot = ""
         ap_fixed_DATA_int = ""
@@ -368,6 +403,7 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
         
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot)).replace("CCC", str(ap_fixed_OUT_int))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         mac_value_tot,mac_value_int = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
         content_file = content_file.replace("ZZZ",tmp)
@@ -410,6 +446,9 @@ void AAA(stream< ACT_mac > &input_0, stream< ACT_BBB > &output_0) {
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
     def generate_my_hls_video_h(self, path):
             content_file = \

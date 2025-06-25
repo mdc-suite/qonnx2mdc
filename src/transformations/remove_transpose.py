@@ -16,50 +16,39 @@ class RemoveTranspose(Transformation):
     def apply(self, model):
         
         wrap = mw(model)
-
         net_input = wrap.graph.input[0].name
+        nodes_to_remove = []
 
-        for node in wrap.graph.node:
-            if node.op_type == "Transpose" :
-
+        for node in list(wrap.graph.node):  # Convert to list to avoid modification issues
+            if node.op_type == "Transpose":
                 # Get direct successors and predecessors
                 successors = wrap.find_direct_successors(node)
                 predecessors = wrap.find_direct_predecessors(node)
-                input_name = None
 
-                if predecessors :
-                    predecessor = predecessors[0]           
-                else:
-                    predecessor = None
-                    
-                
-
-                if predecessor:
+                if predecessors:
+                    predecessor = predecessors[0]
                     input_name = predecessor.output[0]
                 else:
-                    input_name = net_input
-                    
-
+                    predecessor = None
+                    input_name = net_input  # If no predecessor, use the network input
 
                 if successors:
-                    successor = successors[0]
-                    input_to_eliminate = successor.input[0]
-                    
-                else:
-                    successor = None
-                    input_to_eliminate = None
-                
-                
-                if successor:
-                    # Modify the successor node's input connections
-                    if input_to_eliminate in successor.input:
-                        successor.input.remove(input_to_eliminate)
-                        successor.input.insert(0, input_name)
-                else:
-                    print("last node")
-                    predecessor.output[0] = wrap.graph.output[0].name
+                    for successor in successors:
+                        # Replace occurrences of the Transpose node's output in the successor
+                        for i, inp in enumerate(successor.input):
+                            if inp == node.output[0]:  # If input matches the Transpose output
+                                successor.input[i] = input_name  # Replace it with the correct input
 
-                # Remove the Reshape node
-                wrap.graph.node.remove(node)
-                
+                else:
+                    # If the node is the last in the graph, update the predecessor to connect to the output
+                    if predecessor:
+                        predecessor.output[0] = wrap.graph.output[0].name
+
+                # Mark Transpose for removal
+                nodes_to_remove.append(node)
+
+        # Remove all marked Transpose nodes
+        for node in nodes_to_remove:
+            wrap.graph.node.remove(node)
+
         return model, False
