@@ -162,8 +162,10 @@ class HLSWriter():
             # is a previous layer of the ONNX node
             if "_"+layer.output[0] in inputs and "Quant" in layer.name:
                 prev_layers = self.model.find_direct_predecessors(layer)
-                for prv in prev_layers:
-                    prev.append(prv)
+                print(f"Found previous layers for {layer.name}: {prev_layers}")
+                if prev_layers is not None:
+                    for prv in prev_layers:
+                        prev.append(prv)
             elif "_"+layer.output[0] in inputs and "Quant" not in layer.name :
                 # save the Reader node
                 prev.append(layer)
@@ -248,6 +250,14 @@ class HLSWriter():
             
             if "_"+str(inp) == str(self.init.net_input):
                 return True
+            else:
+                predecessors = self.model.find_direct_predecessors(self.node)
+                for pred in predecessors:
+                    if "Quant" in pred.op_type:
+                        for inputs in pred.input:
+                            if "_"+str(inputs) == str(self.init.net_input):
+                                return True
+                
             
         return False
     
