@@ -179,7 +179,8 @@ class XDFWriter():
 
             # if the node is a Conv, use a particular procedure
             if (writer_node.operation == "Conv"):
-
+               
+                        
                 # if the Conv has an input equal to the net input,
                 # use specific procedure
                 if (writer_node.map_of_in_elements["input_0"] == writer_node.init.net_input):
@@ -201,11 +202,16 @@ class XDFWriter():
                     connections += template.format(dst, dst_port, src, src_port)
 
                 # if not, still use a similar but specific procedure
+                elif ("Quant" in writer_node.map_of_in_elements["input_0"]):
+                    #need to find the node which has the output which goes in input to the Quant layer
+                    src_node_name = self.get_node_name_in_writer_list_from_its_input_id(
+                        self.node_list, writer_node.map_of_in_elements["input_0"])
+                    print(f"DEBUG: Inside CONV {writer_node.name} - {src_node_name}")
                 else:
 
                     src_node_name = self.get_node_name_in_writer_list_from_its_output_id(
                         self.node_list, writer_node.map_of_in_elements["input_0"])
-
+                    print(f"DEBUG: {writer_node.name} - {src_node_name}")
                     # prev_layer -> buffer
                     src = src_node_name
                     src_port = "output_0"
@@ -317,12 +323,13 @@ class XDFWriter():
 
                     # otherwise apply another procedure
                     else:
-
+                        print(f"DEBUG: {writer_node.name} - {input_name} - {writer_node.map_of_in_elements[input_name]}")
                         src_node_name = self.get_node_name_in_writer_list_from_its_output_id(
                             self.node_list, writer_node.map_of_in_elements[input_name])
                         print(writer_node.name)
                         print(writer_node.map_of_in_elements)
                         print(writer_node.map_of_out_elements)
+                        print(f"node list {self.node_list}, writer_node_map {writer_node.map_of_in_elements[input_name]}")
                         
                         if("Conv" in src_node_name):
                             if(("weight" not in src_node_name) and ("weight" not in src_node_name) and ("weight" not in src_node_name)):
@@ -382,7 +389,14 @@ class XDFWriter():
             if (writer_node.operation == "Conv" or writer_node.operation == "Gemm"):
 
                 # identify input
-                map_of_in_elements["input_0"] = writer_node.input_[0]
+                print(f"DEBUG map function: {writer_node.input_}")
+                first_input = writer_node.input_[0]
+                
+                if writer_node.prev_layers[0] == writer_node.init.net_input:
+                    first_input = writer_node.init.net_input
+                elif "Quant" in first_input:
+                    first_input = writer_node.prev_layers[0].output[0]
+                map_of_in_elements["input_0"] = first_input
 
                 # identify parameters
                 for index, enter_id in enumerate(writer_node.parameters):
@@ -497,4 +511,13 @@ class XDFWriter():
             # if the node has its output name equal to the one searched,
             # then return the node name
             if (searched_id in node.map_of_out_elements["output_0"]):
+                return node.name
+            
+    def get_node_name_in_writer_list_from_its_input_id(self, node_list, searched_id):
+        # for every writer node
+        for node in node_list:
+
+            # if the node has its input name equal to the one searched,
+            # then return the node name
+            if (searched_id in node.map_of_in_elements["input_0"]):
                 return node.name

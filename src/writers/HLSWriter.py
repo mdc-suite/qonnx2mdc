@@ -162,10 +162,15 @@ class HLSWriter():
             # is a previous layer of the ONNX node
             if "_"+layer.output[0] in inputs and "Quant" in layer.name:
                 prev_layers = self.model.find_direct_predecessors(layer)
-                print(f"Found previous layers for {layer.name}: {prev_layers}")
+                print("Found layer with Quant in Input")
                 if prev_layers is not None:
                     for prv in prev_layers:
                         prev.append(prv)
+                    print("This layer has in input:", prev)
+                elif prev_layers is None and "global_in" in layer.input[0]:
+                    # if the previous layer is not found, it means that the input is the global input
+                    # so we add the global input to the list of previous layers
+                    prev.append(self.init.net_input)
             elif "_"+layer.output[0] in inputs and "Quant" not in layer.name :
                 # save the Reader node
                 prev.append(layer)

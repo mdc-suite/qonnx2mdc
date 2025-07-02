@@ -11,7 +11,7 @@ from qonnx.transformation.base import Transformation
 from qonnx.transformation.infer_shapes import InferShapes
 from qonnx.transformation.quant_constant_folding import FoldTransposeIntoQuantInit
 from qonnx.transformation.remove import remove_node_and_rewire
-
+from math import ceil, log2
 
 class FoldQuantWeights(Transformation):
     """Merges Quant nodes, which are used as weights into the initializer
@@ -95,11 +95,15 @@ class FoldQuantWeights(Transformation):
                         # For both mul and Add:
                         # Move the scale factor behind the next operator
                         scale = model.get_initializer(n.input[1])
+                        fract_width = ceil(log2(1/scale))
                         new_initializer = q_node_output / scale
                         # Round, to correct for floating point errors
                         new_initializer = np.round(new_initializer)
                         #Dequantize so that the scale op is not needed
+                        print(f"DEBUG_frontend_foldweights: trying to not dequantize")
+                        print(f"DEBUG_frontend_foldweights: fract_width = {fract_width} - scale = {scale} - scale_fw = {2 ** -fract_width}")
                         new_initializer = new_initializer * scale
+                        #new_initializer = new_initializer * 2 ** -fract_width
                         q_inst = getCustomOp(n)
                         new_dtype = q_inst.get_integer_datatype(model)
                         model.set_initializer(node_out, new_initializer)
