@@ -288,36 +288,37 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
             elif node.op_type == "Gemm" or node.op_type == "Conv":
                 predecessors = onnx_model.find_direct_predecessors(node)
-                predecessor = predecessors[0]
+                if predecessors:
+                    predecessor = predecessors[0]
+                
+                    if predecessor.op_type == "Quant":
+                        tensor_name = predecessor.input[3]
+                        scale = predecessor.input[1]
+                        node_out = predecessor.output[0]
+                        node_out_type = model.get_tensor_datatype(node_out)
+                        bit_width = node_out_type.bitwidth()
+                        int_width = bit_width - node_out_type.frac_bits()
 
-                if predecessor.op_type == "Quant":
-                    tensor_name = predecessor.input[3]
-                    scale = predecessor.input[1]
-                    fractional_width = 16
-                    bit_width = 32
-                    for initializer in init.initializer:
-                        if initializer.name == tensor_name:
-                            bit_width = onnx.numpy_helper.to_array(initializer)
-                            bit_width = int(bit_width)
-                    
-                        elif initializer.name == scale:
-                            scale = onnx.numpy_helper.to_array(initializer)
-                            fractional_width = ceil(log2(1/scale))
-                            print(f"Fractional width for {tensor_name}: {fractional_width}")
+                        input_size = [bit_width, int_width]
+                    else:
+                        bit_width = onnx_model.get_tensor_datatype(node.input[1])
+                        bit_width = parse_value(bit_width)
+                        input_size = prev_layer_size
+                        int_width = int(bit_width / 2)
 
-                    input_size = [bit_width, fractional_width]
+                elif predecessor == init.net_input:
+                    predecessor = init.net_input
+                    input_size = default_precision
+                    bit_width = default_precision[0]
+                    int_width = default_precision[1]
                 else:
-                    bit_width = onnx_model.get_tensor_datatype(node.input[1])
-                    bit_width = parse_value(bit_width)
-                    input_size = prev_layer_size
-                    fractional_width = int(bit_width / 2)
-
-
+                    raise ValueError(f"Predecessor {predecessor} not found for node {node.name}")
+                    
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
                 "DATATYPE": "ap_fixed",
                 "INPUT": input_size,
-                "COEFF": [bit_width, fractional_width],
+                "COEFF": [bit_width, int_width],
                 "OUTPUT": mac_size     
                 }
             elif node.op_type == "MaxPool" or node.op_type == "GlobalAveragePool":
@@ -341,21 +342,20 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
                 if successor.op_type == "Quant":
                     tensor_name = successor.input[3]
-                    for initializer in init.initializer:
-                        if initializer.name == tensor_name:
-                            bit_width = onnx.numpy_helper.to_array(initializer)
-                            bit_width = int(bit_width)
-                            
-
-                    
+                    node_out = successor.output[0]
+                    node_out_type = model.get_tensor_datatype(node_out)
+                    bit_width = node_out_type.bitwidth()
+                    int_width = bit_width - node_out_type.frac_bits()
+                    output_size = [bit_width, int_width]
                 else:
                     bit_width = default_precision[0]
+                    output_size = [bit_width, int(bit_width/2)]
 
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
                 "DATATYPE": "ap_fixed",
                 "INPUT": mac_size,
-                "OUTPUT": [bit_width, int(bit_width/2)]
+                "OUTPUT": output_size
                 }
 
         print(output_info)

@@ -99,8 +99,7 @@ class FoldQuantWeights(Transformation):
                         # Move the scale factor behind the next operator
                         scale = model.get_initializer(n.input[1])
                         fract_width = ceil(log2(1/scale))
-                        if fract_width > tot_width:
-                            fract_width = tot_width
+                        
                         new_initializer = q_node_output / scale
                         # Round, to correct for floating point errors
                         new_initializer = np.round(new_initializer)
@@ -112,7 +111,8 @@ class FoldQuantWeights(Transformation):
                         if data_type == "ap_fixed":
                             
                             tot_width = model.get_initializer(n.input[3])
-            
+                            if fract_width > tot_width:
+                                fract_width = tot_width
                             ap_fixed_type = FixedPointType(tot_width, tot_width - fract_width)
                             model.set_initializer(node_out, new_initializer)
                             model.set_tensor_datatype(node_out, ap_fixed_type)

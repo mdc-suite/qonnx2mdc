@@ -49,7 +49,7 @@ class Converter_qonnx(Transformation):
         model = model.transform(MatMul_to_Gemm())
         model = model.transform(RemoveIdentityOperations())
         model = model.transform(RemoveFlatten())
-        model = model.transform(SetNCHW_Shape())
+        #model = model.transform(SetNCHW_Shape())
         model = model.transform(Set4D())
         model = model.transform(InferShapes())
         

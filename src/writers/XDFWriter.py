@@ -392,7 +392,7 @@ class XDFWriter():
                 print(f"DEBUG map function: {writer_node.input_}")
                 first_input = writer_node.input_[0]
                 
-                if writer_node.prev_layers[0] == writer_node.init.net_input:
+                if first_input == writer_node.init.net_input or writer_node.prev_layers[0] == writer_node.init.net_input:
                     first_input = writer_node.init.net_input
                 elif "Quant" in first_input:
                     first_input = writer_node.prev_layers[0].output[0]
