@@ -11,14 +11,17 @@ from qonnx.transformation.base import Transformation
 from qonnx.transformation.infer_shapes import InferShapes
 from qonnx.transformation.quant_constant_folding import FoldTransposeIntoQuantInit
 from qonnx.transformation.remove import remove_node_and_rewire
+from qonnx.core.datatype import FixedPointType
 from math import ceil, log2
 
 class FoldQuantWeights(Transformation):
     """Merges Quant nodes, which are used as weights into the initializer
     of the weight tensor.
     """
+    
 
     def apply(self, model):
+        data_type = "ap_fixed"
         graph = model.graph
         node_ind = 0
         graph_modified = False
@@ -100,14 +103,21 @@ class FoldQuantWeights(Transformation):
                         # Round, to correct for floating point errors
                         new_initializer = np.round(new_initializer)
                         #Dequantize so that the scale op is not needed
-                        print(f"DEBUG_frontend_foldweights: trying to not dequantize")
                         print(f"DEBUG_frontend_foldweights: fract_width = {fract_width} - scale = {scale} - scale_fw = {2 ** -fract_width}")
-                        new_initializer = new_initializer * scale
-                        #new_initializer = new_initializer * 2 ** -fract_width
+                        #new_initializer = new_initializer * scale
+                        new_initializer = new_initializer * 2 ** -fract_width
                         q_inst = getCustomOp(n)
-                        new_dtype = q_inst.get_integer_datatype(model)
-                        model.set_initializer(node_out, new_initializer)
-                        model.set_tensor_datatype(node_out, new_dtype)
+                        if data_type == "ap_fixed":
+                            
+                            tot_width = model.get_initializer(n.input[3])
+            
+                            ap_fixed_type = FixedPointType(tot_width, tot_width - fract_width)
+                            model.set_initializer(node_out, new_initializer)
+                            model.set_tensor_datatype(node_out, ap_fixed_type)
+                        else:
+                            new_dtype = q_inst.get_integer_datatype(model)
+                            model.set_initializer(node_out, new_initializer)
+                            model.set_tensor_datatype(node_out, new_dtype)
 
                         # Reshape scale for Conv if required
                         target_output_shape = model.get_tensor_shape(
