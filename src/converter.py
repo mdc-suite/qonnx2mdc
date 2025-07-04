@@ -12,6 +12,7 @@ from transformations.remove_flatten import RemoveFlatten
 from transformations.set_nchw import SetNCHW_Shape
 from transformations.remove_squeeze import RemoveSqueeze
 from transformations.foldaddintoconv import FoldAddIntoConv
+from transformations.inttofixed_quant import IntToFixedQuant
 from qonnx.transformation.infer_shapes import InferShapes
 from transformations.set_4d_shape import Set4D
 
@@ -31,6 +32,7 @@ class Converter_qonnx(Transformation):
         
         
         model = model.transform(RemoveReshape())
+        model = model.transform(FoldTransposeIntoQuantInit())
         model = model.transform(RemoveTranspose())
         model = model.transform(RemoveSqueeze())
         model = model.transform(FoldAddIntoConv())
@@ -41,8 +43,9 @@ class Converter_qonnx(Transformation):
         model = model.transform(RemoveTranspose())
         model = model.transform(RemoveSqueeze())
         model = model.transform(FoldAddIntoConv())
-        model = model.transform(FoldTransposeIntoQuantInit())
+        
         model = model.transform(FoldQuantWeights())
+        model = model.transform(IntToFixedQuant())
         model = model.transform(MatMul_to_Gemm())
         model = model.transform(RemoveIdentityOperations())
         model = model.transform(RemoveFlatten())
