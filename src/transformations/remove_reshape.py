@@ -12,8 +12,10 @@ from qonnx.transformation.base import Transformation
 
 
 class RemoveReshape(Transformation):
-        
-        
+# Remove reshape nodes from the ONNX model, connecting their inputs directly to their successors.
+# setting the shape of the successor of the Rehsape node to the shape of the input of the reshape node.    
+# Sometimes the reshape node is used as flatten, in that case in the hardware it doesn't matter because
+# the input is flattened by the stream, so we can remove it.    
         def apply(self, model):
             
             wrap = mw(model)
@@ -76,17 +78,7 @@ class RemoveReshape(Transformation):
                                 
                             for i,inp in enumerate(input_list):
                                 successor.input.insert(i, inp)
-
-                            
-                                
-                            
-                            
-                            
-                            
-                            
-                                
-                                    
-                            
+      
                     else:
                         print("last node")
                         predecessor.output[0] = wrap.graph.output[0].name
