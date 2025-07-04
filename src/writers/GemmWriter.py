@@ -143,6 +143,7 @@ end"""
 #endif     
 """
         content_file = content_file.replace("AAA",self.name)
+        template = template.replace("AAA", self.name)
         # fill the template
         number = ''.join(filter(str.isdigit, self.name))
         number = "g"+ number
@@ -179,6 +180,7 @@ end"""
                                   out_s
                                   )   
         content_file = content_file.replace("BBB", number)
+        template = template.replace("BBB",number)
 
         name_file = "layer_sizes_{}.h".format(self.name)
 
@@ -339,7 +341,13 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
 
     # generate a "my tipes" file
     def generate_my_types_h(self, path):
-
+        
+        template_types = \
+"""
+// AAA types
+    typedef XXX ACT_BBB;
+    typedef YYY COEFF_BBB;
+"""
 
         template = \
 """
@@ -398,10 +406,12 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
 
         # create content file
         content_file = template.replace("AAA", self.name)
-
+        template_types = template_types.replace("AAA", self.name)
+        template_types = template_types.replace("BBB", number)
         
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot)).replace("CCC", str(ap_fixed_INP_int))
         content_file = content_file.replace("XXX",tmp)
+        template_types = template_types.replace("XXX",tmp)
         mac_value_tot,mac_value_int = self.get_MAC_size()
         tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
         content_file = content_file.replace("ZZZ",tmp)
@@ -410,6 +420,7 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
 
         tmp = template_ap_fixed.replace("BBB", str(ap_fixed_COEFF_tot)).replace("CCC", str(ap_fixed_COEFF_int))
         content_file = content_file.replace("YYY", tmp)
+        template_types = template_types.replace("YYY",tmp)
         content_file = content_file.replace("BBB", number)
         ##############--PREVIOUS LAYER--############################
 
@@ -449,6 +460,9 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
         # file creation
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+
+        with open(os.path.join(path, self.types_file), "a") as new_file:
+            new_file.write(template_types)
 
     def generate_my_Input_types_h(self,path):
 
