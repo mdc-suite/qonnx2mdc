@@ -324,7 +324,7 @@ class XDFWriter():
                     # otherwise apply another procedure
                     else:
                         print(f"DEBUG: {writer_node.name} - {input_name} - {writer_node.map_of_in_elements[input_name]}")
-                        src_node_name = self.get_node_name_in_writer_list_from_its_output_id(
+                        src_node_name = self.get_node_name_in_writer_list_from_its_input_id(
                             self.node_list, writer_node.map_of_in_elements[input_name])
                         print(writer_node.name)
                         print(writer_node.map_of_in_elements)

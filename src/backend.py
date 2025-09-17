@@ -227,6 +227,8 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
         input_name = model.graph.input[0].name
         output_name = model.graph.output[0].name
 
+        initializer_names = {init.name for init in model.graph.initializer}
+
         # Initialize variables to store the extracted information
         output_info = {}
         
@@ -288,14 +290,36 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
             elif node.op_type == "Gemm" or node.op_type == "Conv":
                 predecessors = onnx_model.find_direct_predecessors(node)
+
+                quant = False
+                initializer = None
+
+                for inp in node.input:
+                    if "Quant" in inp:
+                        quant = True
+                        initializer = inp
+                        
+                
+
                 if predecessors:
                     predecessor = predecessors[0]
+
                 
                     if predecessor.op_type == "Quant":
                         tensor_name = predecessor.input[3]
                         scale = predecessor.input[1]
                         node_out = predecessor.output[0]
                         node_out_type = model.get_tensor_datatype(node_out)
+                        
+                        bit_width = node_out_type.bitwidth()
+                        int_width = bit_width - node_out_type.frac_bits()
+
+                        input_size = [bit_width, int_width]
+
+                    elif quant:
+                        node_out = initializer
+                        node_out_type = model.get_tensor_datatype(node_out)
+                        
                         bit_width = node_out_type.bitwidth()
                         int_width = bit_width - node_out_type.frac_bits()
 
@@ -305,7 +329,15 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                         bit_width = parse_value(bit_width)
                         input_size = prev_layer_size
                         int_width = int(bit_width / 2)
+                        
+                elif quant:
+                    node_out = initializer
+                    node_out_type = model.get_tensor_datatype(node_out)
+                    
+                    bit_width = node_out_type.bitwidth()
+                    int_width = bit_width - node_out_type.frac_bits()
 
+                    input_size = [bit_width, int_width]
                 elif predecessor == init.net_input:
                     predecessor = init.net_input
                     input_size = default_precision
@@ -321,6 +353,11 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "COEFF": [bit_width, int_width],
                 "OUTPUT": mac_size     
                 }
+
+                if node.name == "Conv_0":
+                    print("CONV0000000")
+                    print(bit_width )
+
             elif node.op_type == "MaxPool" or node.op_type == "GlobalAveragePool":
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
@@ -358,7 +395,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "OUTPUT": output_size
                 }
 
-        print(output_info)
+        print("OUTPUT INFO", output_info)
         
         with open(output_file_path, "w") as json_file:
             json.dump(output_info, json_file, indent=4)
