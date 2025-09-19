@@ -41,6 +41,10 @@ class SigmoidWriter(HLSWriter):
 
         
         ap_fixed_INP_int , ap_fixed_INP_tot,ap_fixed_OUT_int , ap_fixed_OUT_tot, ap_fixed_COEFF_int , ap_fixed_COEFF_tot = self.get_my_size()
+        if self.is_Input_prev():
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
+        else:
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=self.prev_layers[0].name)
 
         
         # initializations of the variables that will contain
@@ -75,7 +79,7 @@ end"""
         # add all the inputs of the layer
         for elem in input_list:
 
-            inputs_actor += template_input.format(ap_fixed_INP_tot, elem)
+            inputs_actor += template_input.format(ap_fixed_OUT_tot_P, elem)
 
         # add the output of the layer
         for elem in output_list:
@@ -426,27 +430,21 @@ void AAA(stream<ACT_BBB> &input_0, stream <ACT_CCC> &output_0){
             """ap_fixed< BBB, CCC, AP_RND, AP_SAT> """
         
         if self.is_Input_prev():
-            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
         else:
-            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=self.prev_layers[0].name)
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=self.prev_layers[0].name)
 
         ap_fixed_INP_int , ap_fixed_INP_tot,ap_fixed_OUT_int , ap_fixed_OUT_tot, ap_fixed_COEFF_int , ap_fixed_COEFF_tot = self.get_my_size()
 
         # create content file
         content_file = content_file.replace("AAA", self.name)
 
-        tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot)).replace("CCC", str(ap_fixed_INP_int))
+        tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_int_P))
         content_file = content_file.replace("XXX",tmp)
 
-        if "Conv" in self.prev_layers[0].name or "Gemm" in self.prev_layers[0].name:
-            mac_value_tot,mac_value_int = self.get_MAC_size()
-            tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
-            content_file = content_file.replace("WWW",tmp)
-            
-        else:
-            mac_value_tot,mac_value_int = self.get_MAC_size()
-            tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
-            content_file = content_file.replace("WWW",tmp)
+        mac_value_tot,mac_value_int = self.get_MAC_size()
+        tmp = template_ap_fixed.replace("BBB", str(mac_value_tot)).replace("CCC", str(mac_value_int))
+        content_file = content_file.replace("WWW",tmp)
 
         template_types = template_types.replace("XXX",tmp)
 

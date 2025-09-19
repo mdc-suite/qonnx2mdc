@@ -396,9 +396,9 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
         #Extract Previous Layer's Types.
         #ap_fixed_DATA_int, ap_fixed_DATA_tot, selector_DATA, ap_fixed_COEFF_int, ap_fixed_COEFF_tot, selector_COEFF = self.get_my_size(bit_size_directives)
         if self.is_Input_prev():
-            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=str(self.init.net_input))
         else:
-            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=self.prev_layers[0].name)
+            ap_fixed_INP_int_P , ap_fixed_INP_tot_P,ap_fixed_OUT_int_P , ap_fixed_OUT_tot_P, ap_fixed_COEFF_int_P , ap_fixed_COEFF_tot_P = self.get_my_size(spec_node=self.prev_layers[0].name)
 
 
         #ap_fixed_DATA_int_prev, ap_fixed_DATA_tot_prev, selector_DATA_prev, ap_fixed_COEFF_int_prev, ap_fixed_COEFF_tot_prev, selector_COEFF_prev = self.get_my_size(bit_size_directives, prev_layer.operation)
@@ -450,7 +450,10 @@ const COEFF_BBB bias[out_s_BBB] = BIAS_AAA;
                 first_letters, last_number = match.groups()
                 template_previous = template_previous.replace("CCC", f"{first_letters[0].lower()}{last_number}")
 
-            tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot_P)).replace("CCC", str(ap_fixed_INP_int_P))
+            if self.is_Input_prev() :
+                tmp = template_ap_fixed.replace("BBB", str(ap_fixed_INP_tot_P)).replace("CCC", str(ap_fixed_INP_int_P))
+            else:
+                tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_int_P))
             template_previous = template_previous.replace("WWW",tmp)
             content_file= content_file + template_previous
 
