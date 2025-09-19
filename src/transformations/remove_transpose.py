@@ -25,6 +25,12 @@ class RemoveTranspose(Transformation):
                 successors = wrap.find_direct_successors(node)
                 predecessors = wrap.find_direct_predecessors(node)
 
+                shape = wrap.get_tensor_shape(node.output[0])
+
+                
+
+                print("DEBUG FRONTEND", shape)
+
                 if predecessors:
                     predecessor = predecessors[0]
                     input_name = predecessor.output[0]
@@ -37,8 +43,9 @@ class RemoveTranspose(Transformation):
                         # Replace occurrences of the Transpose node's output in the successor
                         for i, inp in enumerate(successor.input):
                             if inp == node.output[0]:  # If input matches the Transpose output
+                                
                                 successor.input[i] = input_name  # Replace it with the correct input
-
+                                wrap.set_tensor_shape(successor.input[i], shape)
                 else:
                     # If the node is the last in the graph, update the predecessor to connect to the output
                     if predecessor:
