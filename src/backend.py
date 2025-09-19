@@ -289,6 +289,8 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 }
 
             elif node.op_type == "Gemm" or node.op_type == "Conv":
+
+                
                 predecessors = onnx_model.find_direct_predecessors(node)
 
                 quant = False
@@ -303,6 +305,8 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
 
                 if predecessors:
                     predecessor = predecessors[0]
+
+                    print("Predecessor DEBUG:", predecessor.name)
 
                 
                     if predecessor.op_type == "Quant":
@@ -323,21 +327,21 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                         bit_width = node_out_type.bitwidth()
                         int_width = bit_width - node_out_type.frac_bits()
 
-                        input_size = [bit_width, int_width]
+                        input_size = prev_layer_size
                     else:
                         bit_width = onnx_model.get_tensor_datatype(node.input[1])
                         bit_width = parse_value(bit_width)
                         input_size = prev_layer_size
                         int_width = int(bit_width / 2)
                         
-                elif quant:
+                elif predecessor == init.net_input and quant:
                     node_out = initializer
                     node_out_type = model.get_tensor_datatype(node_out)
                     
                     bit_width = node_out_type.bitwidth()
                     int_width = bit_width - node_out_type.frac_bits()
 
-                    input_size = [bit_width, int_width]
+                    input_size = default_precision
                 elif predecessor == init.net_input:
                     predecessor = init.net_input
                     input_size = default_precision
@@ -345,6 +349,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                     int_width = default_precision[1]
                 else:
                     raise ValueError(f"Predecessor {predecessor} not found for node {node.name}")
+                    
                     
                 output_info[node.name]={
                 "OP_TYPE": node.op_type,
@@ -354,9 +359,7 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                 "OUTPUT": mac_size     
                 }
 
-                if node.name == "Conv_0":
-                    print("CONV0000000")
-                    print(bit_width )
+                
 
             elif node.op_type == "MaxPool" or node.op_type == "GlobalAveragePool":
                 output_info[node.name]={
