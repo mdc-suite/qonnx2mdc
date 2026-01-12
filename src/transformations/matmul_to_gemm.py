@@ -52,12 +52,7 @@ class MatMul_to_Gemm(Transformation):
             
                     # Create the Flatten node with specified attributes
                     output_name = "Gemm_output"+str(resh_cnt)
-                    info = wrap.get_tensor_valueinfo(node.input[1])
-                    dim1 = info.type.tensor_type.shape.dim
-
-                    for dims in dim1:
-                        dim1 = dims.dim_value
-                        break
+                    
 
                     gemm_node = helper.make_node(
                                                 op_type = 'Gemm',
@@ -68,8 +63,6 @@ class MatMul_to_Gemm(Transformation):
                     
                     
                     wrap.graph.node.extend([gemm_node])
-                    node.input.remove(node.input[1])
-                    node.input.insert(1,output_name)
                     wrap.graph.node.remove(node)
                     wrap.graph.node.remove(successor)
 

@@ -689,7 +689,7 @@ Loop_scrittura:for(hkern=0; hkern < kern_s_h_BBB ; hkern++){
 
                         # reordering
                         weight_values[index_d][index_h][index_w][index_k] = value
-
+        print("DEBUG - Weights reshaped for layer {}: {}".format(self.name, weight_values.shape))
         weight_values = str(weight_values.tolist())
 
         weight_values = weight_values.replace("[","{")

@@ -187,8 +187,40 @@ end"""
         number = ''.join(filter(str.isdigit, self.name))
         content_file = content_file.replace("BBB", "gap"+number)
         template = template.replace("BBB", "gap"+number)
-        in_d, in_h, in_w = self.isizes[1:]
-        out_d, out_h, out_w, = self.osizes[1:]
+
+
+        if (len(self.isizes)) == 2 :
+            if self.isizes[1] == 1 or self.isizes[1] == -1:
+                in_d = 1
+                in_w = self.isizes[2]
+                in_h = 1
+            elif self.isizes[0] == 1 or self.isizes[0] == -1:
+                in_d = 1
+                in_w = self.isizes[1]
+                in_h = 1
+            else:
+                in_d,in_h,in_w = self.isizes[1:]
+        else:
+            in_d,in_h,in_w = self.isizes[1:]
+
+        
+        if (len(self.osizes)) == 2 :
+            if self.osizes[1] == 1 or self.osizes[1] == -1:
+                out_d = 1
+                out_w = self.osizes[2]
+                out_h = 1
+            elif self.osizes[0] == 1 or self.osizes[0] == -1:
+                out_d = 1
+                out_w = self.osizes[1]
+                out_h = 1
+            else:
+                out_d, out_h, out_w, = self.osizes[1:]
+        elif len(self.osizes) == 3:
+                out_d = self.osizes[1]
+                out_w = self.osizes[0]
+                out_h = self.osizes[2]
+        else:
+            out_d, out_h, out_w, = self.osizes[1:]
       
 
         content_file = content_file.format(
@@ -275,15 +307,17 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 	
 	ACT_mac sum[out_s_d_BBB];  // Ensure initialization happens only once
 
+    #pragma HLS ARRAY_PARTITION dim=1 type=complete variable=sum
+
     for(count = 0; count < out_s_d_BBB; count++){
-    #PRAGMA HLS UNROLL
+    #pragma HLS UNROLL
         sum[count] = 0;
     }
 
 	for(hout = 0; hout < in_s_h_BBB; hout++) {
 		for(wout = 0; wout < in_s_w_BBB; wout++) {
+#pragma HLS PIPELINE II=1
 			for (pin = 0; pin < in_s_d_BBB; pin++) {
-            #pragma HLS PIPELINE rewind
 					input_0.read(in_val);
 
 					sum[pin] = sum[pin] + in_val;
@@ -295,7 +329,7 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0) {
 
 		//Now it can write a submatrix
 Loop_scrittura:for(pout=0; pout < out_s_d_BBB ; pout++){
-
+#pragma HLS PIPELINE II=1
 						out_val = (ACT_BBB)(sum[pout]/(in_s_h_BBB * in_s_w_BBB));
 						output_0.write(out_val);
 					}

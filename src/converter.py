@@ -30,19 +30,13 @@ class Converter_qonnx(Transformation):
         
         
         
-        
+        model = model.transform(RemoveSqueeze())
         model = model.transform(RemoveReshape())
         model = model.transform(FoldTransposeIntoQuantInit())
         model = model.transform(RemoveTranspose())
-        model = model.transform(RemoveSqueeze())
+        
         model = model.transform(FoldAddIntoConv())
         
-        
-        
-        model = model.transform(RemoveReshape())
-        model = model.transform(RemoveTranspose())
-        model = model.transform(RemoveSqueeze())
-        model = model.transform(FoldAddIntoConv())
         
         model = model.transform(FoldQuantWeights())
         model = model.transform(IntToFixedQuant())

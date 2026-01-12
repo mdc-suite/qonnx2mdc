@@ -117,9 +117,7 @@ def write_cpp_equivalent(onnx_model, init, json_file, path_cal, path_cpp, output
         # Check if the node represents a ReLU operation
         if node.op_type == "Relu":
             relu_check = True
-            # Here you can add your logic to handle the ReLU node
-            # For example, you can check its successors to see if a quantization layer follows
-            # If so, extract parameters and skip the quantization layer
+            
         # Check the type of the node and call the corresponding writer function
         writer_function = layer_writers.get(node.op_type)
         if writer_function:
@@ -384,9 +382,14 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                     tensor_name = successor.input[3]
                     node_out = successor.output[0]
                     node_out_type = model.get_tensor_datatype(node_out)
-                    bit_width = node_out_type.bitwidth()
-                    int_width = bit_width - node_out_type.frac_bits()
-                    output_size = [bit_width, int_width]
+                    if  node_out_type == "FLOAT32":
+                        bit_width = node_out_type.bitwidth()
+                        int_width = bit_width
+                        output_size = [bit_width, int_width//2]
+                    else:
+                        bit_width = node_out_type.bitwidth()
+                        int_width = bit_width - node_out_type.frac_bits()
+                        output_size = [bit_width, int_width]
                 else:
                     bit_width = default_precision[0]
                     output_size = [bit_width, int(bit_width/2)]

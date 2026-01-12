@@ -246,7 +246,7 @@ end"""
         A, B= self.init.parameters_values[enter_id].shape
         #weight_values = str(self.init.parameters_values[enter_id].reshape((B,A)).tolist())
         weight_values = str(self.init.parameters_values[enter_id].tolist())
-
+        print("DEBUG - Weights shape for layer {}: {}".format(self.name, self.init.parameters_values[enter_id].shape))
         weight_values = weight_values.replace("[", "{")
         weight_values = weight_values.replace("]", "}")
 
