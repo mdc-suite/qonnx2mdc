@@ -1,6 +1,7 @@
 # Default output folder
 qonnx2mdc_outputs/
 
+./ViT_example/notebook/data
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
