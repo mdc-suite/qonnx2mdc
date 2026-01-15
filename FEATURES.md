@@ -3,23 +3,27 @@
 
 # Features
 
-- [x] Basic softmax implementation (Q × Kᵀ + A × V)
-- [x] Denominator accumulation (DA) with safe rescaling --> implicit rescaling as written in https://github.com/pulp-platform/ITA.git
-- [x] Possibly precompute 1/std to alleviate computation for BatchNorm layer
-- [x] Test the whole system
-- [x] Implement Add&Norm layer (using BatchNorm)
-- [x] Implement the whole MultiHeadAttention structure (BatchNorm, FFN, ..)
-- [ ] Consider packing more data together for higher parallelization (for now, stream one data at time)
-- [ ] Consider tiling and partial array buffering 
-- [ ] Consider at least a basic NAS to then set PE and SIMD features
-- [ ] Implement masking to support Decoder architecture
-- [ ] Serial divider for denominator inversion (DI) --> need to check best way to implement it in HLS
-- [ ] Parallelization of Q × Kᵀ (PE-level optimization)
-- [ ] Add unit tests for softmax normalization
-- [ ] Support configurable bit widths (B as template parameter)
-- [ ] Consider the implementation of binary layers 
-- [ ] Consider level of parallelization of Heads 
+- HARDWARE
+    - [x] Basic softmax implementation (Q × Kᵀ + A × V)
+    - [x] Denominator accumulation (DA) with safe rescaling --> implicit rescaling as written in https://github.com/pulp-platform/ITA.git
+    - [x] Possibly precompute 1/std to alleviate computation for BatchNorm layer
+    - [x] Test the whole system
+    - [x] Implement Add&Norm layer (using BatchNorm)
+    - [x] Implement the whole MultiHeadAttention structure (BatchNorm, FFN, ..)
+    - [ ] Consider packing more data together for higher parallelization (for now, stream one data at time)
+    - [ ] Consider tiling and partial array buffering 
+    - [ ] Implement masking to support Decoder architecture
+    - [ ] Serial divider for denominator inversion (DI) --> need to check best way to implement it in HLS
+    - [ ] Parallelization of Q × Kᵀ (PE-level optimization)
+    - [ ] Support configurable bit widths (B as template parameter)
+    - [ ] Consider the implementation of binary layers 
+    - [ ] Consider level of parallelization of Heads 
 
+
+    - [ ] Add unit tests for network and partial layers
+    - [ ] Consider at least a basic NAS to set PE and SIMD features <-- Future work
+    - [ ] At least basic support of ViT Architecture for QONNX2MDC  <-- Work in progress
+    - [ ] Add golden references for HLS - Python (for ONNX Runtime, still need work)
 # Ideas
 
 - In the QONNX, considerate three cases (or more) for Reshape layers:
