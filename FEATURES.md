@@ -19,7 +19,7 @@
     - [ ] Consider the implementation of binary layers 
     - [ ] Consider level of parallelization of Heads 
 
-
+- SOFTWARE
     - [ ] Add unit tests for network and partial layers
     - [ ] Consider at least a basic NAS to set PE and SIMD features <-- Future work
     - [ ] At least basic support of ViT Architecture for QONNX2MDC  <-- Work in progress
@@ -30,3 +30,14 @@
     - Input size == Output size --> remove reshape (usually the transposition is handled by the HLS code naturally)
     - Input size > Output size  --> remove reshape and set size as Output size (flattening carried out naturally by streaming nature of HLS layers)
     - Input size < Output size  --> in ViT cases, we are splitting a tensor, so implement a custom operator (can be called HeadSplit) so that the HLS can infer X heads 
+
+- I am pondering between two solutions for supporting ViT's QONNX format:
+    - Identify a whole MultiHeadAttention, checking for patterns like:
+        
+        Q path: Gemm → Reshape → Transpose ───────┐
+                                                │
+        K path: Gemm → Reshape → Transpose ──┐    ├→ MatMul → Div → Softmax → MatMul → Reshape → Transpose
+                                            └────┘
+        V path: Gemm → Reshape → Transpose ────────────────────────────────────────────────┘
+
+        The Reshape first serves as a *head splitter*, while the second one does the *head merging*
