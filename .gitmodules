@@ -1,0 +1,3 @@
+[submodule "external/vit_hls"]
+	path = external/vit_hls
+	url = https://gitlab.com/fedemanca/transformer_hls.git
