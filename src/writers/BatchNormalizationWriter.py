@@ -297,12 +297,15 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
         runn_mean = \
 """
 #define RUNNING_MEAN_AAA   """ + runn_mean_values
+        
+        #########################
 
         eps = 0.1
         runn_mean = runn_mean.replace("AAA", self.name)
         enter_id = "_"+self.node.input[4]
-        self.init.parameters_values[enter_id] = self.init.parameters_values[enter_id] +  self.batch_eps + eps
+        self.init.parameters_values[enter_id] = self.init.parameters_values[enter_id] 
         runn_var_values = np.array(self.init.parameters_values[enter_id].tolist())
+        runn_var_values = 1.0 / (runn_var_values +  self.batch_eps + eps)
         runn_var_values = float_to_fixed(runn_var_values)
         runn_var_values = str(runn_var_values.tolist())
         
@@ -320,6 +323,8 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
+        
+        ######
 
     #generate X.ccp file
     def generate_batch_ccp_HLS(self,path):
@@ -360,7 +365,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
 				
 				current = (COEFF_BBB)input_0.read(); //in[pin][hin][win];
 
-				out = (ACT_BBB)(((current - mean) / std) * scale + B);
+				out = (ACT_BBB)(((current - mean) * std) * scale + B);
 				output_0.write(out);
 			}
 		}
