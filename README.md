@@ -40,7 +40,7 @@ QONNX model ──> frontend ──> backend ──> CAL/ + Cpp/ + HLS/ + TCL + 
 Tested with Python 3.10.10 on Linux. For a Docker setup, see [README_Docker.md](README_Docker.md).
 
 ```bash
-git clone --recurse-submodules https://github.com/mdc-suite/qonnx2mdc.git
+git clone https://github.com/mdc-suite/qonnx2mdc.git
 cd qonnx2mdc
 
 conda create -n qonnx2mdc python=3.10.10
@@ -69,9 +69,9 @@ Output tree:
 ```
 /path/to/output_dir/example_output[_<timestamp>]/
 ├── json.json           # per-layer fixed-point precision
-├── TCL_file.tcl        # Vitis HLS project script
 ├── CAL/                # CAL actors + XDF_file.xdf
-├── Cpp/                # one folder per layer, my_types.h, my_sizes.h, Testbench_vitis_hls.cpp
+├── Cpp/                # one folder per layer, my_types.h, my_sizes.h,
+│                       # Testbench_vitis_hls.cpp, TCL_file.tcl
 └── HLS/fifo_gen.v
 ```
 
@@ -80,7 +80,7 @@ If `example_output` already exists, a new folder with a timestamp suffix is crea
 ### Synthesize with Vitis HLS
 
 ```bash
-cd /path/to/output_dir/example_output
+cd /path/to/output_dir/example_output/Cpp
 vitis_hls -f TCL_file.tcl
 ```
 
@@ -106,14 +106,9 @@ More notebooks in `examples/`:
 - `inception_net.ipynb`: Inception-style network with `Concat`.
 - `IEEE_ESL/IEEE_ESL_example.ipynb`: how the models in the IEEE ESL paper were obtained (A8-W8, Mixed-2).
 
-## Vision Transformer (work in progress)
+## Roadmap
 
-The `VIT_branch` branch adds Vision Transformer support.
-
-- `external/vit_hls`: git submodule with the hand-written ViT HLS library.
-- `ViT_example/`: quantized ViT notebook, HLS sources and a Vitis HLS script (`tcl_file.tcl`).
-
-The converter does not yet map ViT QONNX graphs to these HLS blocks. Progress is tracked in [FEATURES.md](FEATURES.md).
+Planned layers and fixes are tracked in [FEATURES.md](FEATURES.md).
 
 ## Project layout
 
@@ -126,8 +121,6 @@ src/
 ├── transformations/    # QONNX graph passes
 └── writers/            # per-layer HLS/CAL writers, XDF, TCL, testbench
 examples/               # tutorials and notebooks
-ViT_example/            # ViT HLS example
-external/vit_hls/       # ViT HLS submodule
 ```
 
 ## Acknowledgements
