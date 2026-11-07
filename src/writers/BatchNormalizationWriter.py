@@ -237,94 +237,36 @@ void AAA(stream< ACT_CCC > &input_0, stream <ACT_BBB> &output_0);
     #generate parameters_X.h file
     def generate_parameters_h_HLS(self, path):
 
-
-        import numpy as np 
+        import numpy as np
 
         def float_to_fixed(value, total_bits=32, frac_bits=16):
                     scale = 2 ** frac_bits
                     fixed_value = np.round(value * scale).astype(np.int32)
                     return fixed_value / scale
 
-        content_file = \
-"""
-#ifndef BATCH_AAA_PARAMS
-#define BATCH_AAA_PARAMS
-    {}
-	{}
-	{}
-	{}
+        def to_define(macro, values):
+            values = str(float_to_fixed(values).tolist()).replace("[", "{").replace("]", "}")
+            return "#define {}_{}   {}".format(macro, self.name, values)
+
+        params = [np.array(self.init.parameters_values["_" + i]) for i in self.node.input[1:5]]
+        gamma, beta, mean, var = params
+
+        # fold BN into one multiply-add per value: y = x * scale + shift
+        scale = gamma / np.sqrt(var + self.batch_eps)
+        shift = beta - mean * scale
+
+        content_file = """
+#ifndef BATCH_{0}_PARAMS
+#define BATCH_{0}_PARAMS
+{1}
+{2}
 #endif
-"""
-
-
-        
-
-        content_file = content_file.replace("AAA", self.name)
-        enter_id = "_"+self.node.input[1]
-        #weight_values = str(self.init.parameters_values[enter_id].tolist())
-
-        weight_values = np.array(self.init.parameters_values[enter_id].tolist())
-        weight_values = float_to_fixed(weight_values)
-        weight_values = str(weight_values.tolist())
-
-        weight_values = weight_values.replace("[","{")
-        weight_values = weight_values.replace("]", "}")
-
-        weight = \
-"""
-#define WEIGHT_AAA   """ + weight_values
-
-        weight = weight.replace("AAA", self.name)
-        enter_id = "_"+self.node.input[2]
-        bias_values = np.array(self.init.parameters_values[enter_id].tolist())
-        bias_values = float_to_fixed(bias_values)
-        bias_values = str(bias_values.tolist())
-        bias_values = bias_values.replace("[","{")
-        bias_values = bias_values.replace("]", "}")
-
-        bias = \
-"""
-#define BIAS_AAA   """ + bias_values
-
-        bias = bias.replace("AAA", self.name)
-        enter_id = "_"+self.node.input[3]
-        runn_mean_values = np.array(self.init.parameters_values[enter_id].tolist())
-        runn_mean_values = float_to_fixed(runn_mean_values)
-        runn_mean_values = str(runn_mean_values.tolist())
-        runn_mean_values = runn_mean_values.replace("[", "{")
-        runn_mean_values = runn_mean_values.replace("]", "}")
-
-        runn_mean = \
-"""
-#define RUNNING_MEAN_AAA   """ + runn_mean_values
-        
-        #########################
-
-        eps = 0.1
-        runn_mean = runn_mean.replace("AAA", self.name)
-        enter_id = "_"+self.node.input[4]
-        self.init.parameters_values[enter_id] = self.init.parameters_values[enter_id] 
-        runn_var_values = np.array(self.init.parameters_values[enter_id].tolist())
-        runn_var_values = 1.0 / (runn_var_values +  self.batch_eps + eps)
-        runn_var_values = float_to_fixed(runn_var_values)
-        runn_var_values = str(runn_var_values.tolist())
-        
-        runn_var_values = runn_var_values.replace("[", "{")
-        runn_var_values = runn_var_values.replace("]", "}")
-
-        runn_var = \
-"""
-#define RUNNING_VAR_AAA   """ + runn_var_values
-
-        runn_var = runn_var.replace("AAA", self.name)
-        content_file = content_file.format(weight, bias,runn_mean,runn_var)
+""".format(self.name, to_define("SCALE", scale), to_define("SHIFT", shift))
 
         name_file = "parameters_{}.h".format(self.name)
 
         with open(os.path.join(path, name_file), "w") as new_file:
             new_file.write(content_file)
-        
-        ######
 
     #generate X.ccp file
     def generate_batch_ccp_HLS(self,path):
@@ -345,12 +287,9 @@ using namespace hls;
 void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0){
 	#pragma HLS INTERFACE ap_ctrl_none port=return
 
-	const COEFF_BBB running_mean[in_s_d_BBB] = RUNNING_MEAN_AAA;
-	const COEFF_BBB running_std[in_s_d_BBB] = RUNNING_VAR_AAA; // I stored std instead of var
-	const COEFF_BBB weight[in_s_d_BBB] = WEIGHT_AAA;
-	const COEFF_BBB bias[in_s_d_BBB] = BIAS_AAA;
-	
-	COEFF_BBB mean, std, scale, B; 
+	const COEFF_BBB scale[in_s_d_BBB] = SCALE_AAA;
+	const COEFF_BBB shift[in_s_d_BBB] = SHIFT_AAA;
+
     COEFF_BBB current;
     ACT_BBB out;
 	ITER hin, win, pin;
@@ -358,14 +297,9 @@ void AAA(stream<ACT_CCC> &input_0, stream <ACT_BBB> &output_0){
 	for (hin = 0; hin < in_s_h_BBB; hin++){
 		for (win = 0; win < in_s_w_BBB; win++){
 Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
-				mean = running_mean[pin];
-				std = running_std[pin];
-				scale = weight[pin];
-				B = bias[pin];
-				
+                #pragma HLS PIPELINE II=1
 				current = (COEFF_BBB)input_0.read(); //in[pin][hin][win];
-
-				out = (ACT_BBB)(((current - mean) * std) * scale + B);
+				out = (ACT_BBB)(current * scale[pin] + shift[pin]);
 				output_0.write(out);
 			}
 		}
@@ -503,7 +437,7 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
                 first_letters, last_number = match.groups()
                 template_previous_coeff = template_previous_coeff.replace("CCC", f"{first_letters[0].lower()}{last_number}")
 
-            tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_tot_P))
+            tmp = template_ap_fixed.replace("BBB", str(ap_fixed_OUT_tot_P)).replace("CCC", str(ap_fixed_OUT_int_P))
             template_previous_coeff = template_previous_coeff.replace("WWW",tmp)
             tmp = template_ap_fixed.replace("BBB", str(ap_fixed_COEFF_tot_P)).replace("CCC", str(ap_fixed_COEFF_int_P))
             template_previous_coeff = template_previous_coeff.replace("JJJ", tmp)
@@ -538,44 +472,14 @@ Loop_interno:for (pin = 0; pin < in_s_d_BBB; pin++){
         # if ONNX node exists
         if self.node is not None:
 
-            # initially set attributes to None
-            epsilon = None
-            spatial = None
-            momentum = None
+            # ONNX defaults, overridden by the node attributes
+            attrs = {a.name: a for a in self.node.attribute}
+            epsilon = attrs["epsilon"].f if "epsilon" in attrs else 1e-05
+            spatial = attrs["spatial"].i if "spatial" in attrs else 1
+            momentum = attrs["momentum"].f if "momentum" in attrs else 0.9
 
             # if the node is not a BatchNorm type
             if self.node.op_type == "BatchNormalization":
-
-                # for all the attribute of the node
-                for attribute in self.node.attribute:
-
-                    # if attribute "eps" is found
-                    if attribute.name == "epsilon":
-
-                        # save it and set flag as True
-                        epsilon = attribute.f
-
-                    # otherwise set "1e-05" as default value of "eps"
-                    else:
-                        epsilon = 1e-05
-
-                    # if attribute "spatial" is found
-                    if attribute.name == "spatial":
-
-                        # save it and set flag as True
-                        spatial = attribute.i
-
-                    # otherwise set "1" as default value of "spatial"
-                    else: spatial = 1
-
-                    # if attribute "momentum" is found
-                    if attribute.name == "momentum":
-
-                        # sace it and set flag as True
-                        momentum = attribute.f
-
-                    # otherwise set "0.9" as default value of "momentum"
-                    else: momentum = 0.9
 
                 #restituisci i valori dei tre iperparametri
                 return epsilon, spatial, momentum
