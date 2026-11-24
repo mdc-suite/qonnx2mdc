@@ -8,6 +8,7 @@ import onnx
 import tensorflow as tf
 from qonnx.core.modelwrapper import ModelWrapper as mw
 from converter import Converter_qonnx
+from checks import check_model
 
 
 def frontend(onnx_path = "None"):
@@ -52,6 +53,8 @@ def frontend(onnx_path = "None"):
     new_qonnx_model, _ = converter.apply(qonnx_model)
 
     new_qonnx_model.cleanup()
+
+    check_model(new_qonnx_model)
 
     new_qonnx_model.save(path)
 

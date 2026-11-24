@@ -262,8 +262,13 @@ def writeJson(onnx_model,path, init, default_precision = [32,16]):
                             prev_layer_size = get_tensor_sizes(predecessor, output_info)
                         else:
                             predecessor = init.net_input
-                            prev_layer_size = default_precision    
-                    
+                            prev_layer_size = default_precision
+                    else:
+                        # a plain layer feeds this one: take its output size, not the value left from the previous node
+                        prev_layer_size = get_tensor_sizes(predecessor, output_info)
+                        if prev_layer_size is None:
+                            raise ValueError(f"No output size recorded for {predecessor.name}, the input of {node.name}")
+
             else:
                 prev_layer_size = default_precision
 

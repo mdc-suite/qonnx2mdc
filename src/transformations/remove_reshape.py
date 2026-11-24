@@ -41,7 +41,11 @@ class RemoveReshape(Transformation):
                         input_name = predecessor.output[0]
                     else:
                         input_name = net_input
-                        
+
+                    # the tensor that now feeds the successor must carry the Reshape output shape
+                    reshape_out_shape = wrap.get_tensor_shape(node.output[0])
+                    if reshape_out_shape is not None:
+                        wrap.set_tensor_shape(input_name, reshape_out_shape)
 
 
                     if successors:
